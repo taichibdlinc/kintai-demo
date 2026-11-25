@@ -1,0 +1,1793 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>勤怠</title>
+<meta name="theme-color" content="#16655D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F1F3F1;--surface:#FFFFFF;--sunk:#E8ECEA;--ink:#18201E;--muted:#5B6764;--line:#DADFDC;
+  --accent:#16655D;--accent-ink:#FFFFFF;--accent-soft:#DCEBE7;
+  --ok:#2C7A4B;--ok-soft:#DDEFE3;--warn:#94600F;--warn-soft:#F5E8CF;--bad:#A5332B;--bad-soft:#F6DEDB;
+  --off:#F6ECE9;--off-ink:#A5332B;--bar:#16655D;--bar-ot:#C27A12;
+  --sans:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#111615;--surface:#1A2120;--sunk:#141A19;--ink:#E5EAE8;--muted:#98A4A1;--line:#2B3432;
+    --accent:#5DB7AA;--accent-ink:#0C1513;--accent-soft:#1D3531;
+    --ok:#6CC08C;--ok-soft:#1B3325;--warn:#E2AA52;--warn-soft:#382C17;--bad:#E88079;--bad-soft:#3A2220;
+    --off:#271D1C;--off-ink:#E88079;--bar:#5DB7AA;--bar-ot:#E2AA52;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111615;--surface:#1A2120;--sunk:#141A19;--ink:#E5EAE8;--muted:#98A4A1;--line:#2B3432;
+  --accent:#5DB7AA;--accent-ink:#0C1513;--accent-soft:#1D3531;
+  --ok:#6CC08C;--ok-soft:#1B3325;--warn:#E2AA52;--warn-soft:#382C17;--bad:#E88079;--bad-soft:#3A2220;
+  --off:#271D1C;--off-ink:#E88079;--bar:#5DB7AA;--bar-ot:#E2AA52;color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;
+  padding:env(safe-area-inset-top,0) 16px calc(84px + env(safe-area-inset-bottom,0));-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-block:12px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.35}
+h2{font-size:17px;font-weight:700}
+h3{font-size:14px;font-weight:700}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.label{font-size:11.5px;letter-spacing:.08em;color:var(--muted);font-weight:500}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:500}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad-soft)}
+.btn.sm{padding:5px 10px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:default}
+.field{display:flex;flex-direction:column;gap:4px}
+.field input,.field select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;min-width:0;width:100%}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1 1 0;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.demo{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:8px 12px;font-size:13px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:500;padding:1px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.off{background:var(--off);color:var(--off-ink)}
+.chip.acc{background:var(--accent-soft);color:var(--accent)}
+
+/* header */
+.top{display:flex;align-items:center;gap:12px;padding-top:6px}
+.brand{font-weight:700;letter-spacing:.02em}
+.brand small{display:block;font-weight:400;font-size:12px;color:var(--muted);letter-spacing:0}
+.menu{position:relative;margin-left:auto}
+.menu-list{position:absolute;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px;min-width:170px;z-index:20;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.menu-list button{background:none;border:0;text-align:left;padding:9px 10px;border-radius:8px}
+.menu-list button:hover{background:var(--sunk)}
+
+/* clock */
+.clock{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.clock .time{font-family:var(--mono);font-size:clamp(46px,14vw,72px);font-weight:600;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.clock .time .sec{font-size:.42em;color:var(--muted);margin-left:4px}
+.state{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.dot.on{background:var(--ok);box-shadow:0 0 0 4px var(--ok-soft)}
+.punch-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pbtn{border-radius:14px;padding:18px 12px;border:1.5px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;gap:2px}
+.pbtn b{font-size:20px;letter-spacing:.1em}
+.pbtn span{font-size:12px;color:var(--muted)}
+.pbtn.main{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pbtn.main span{color:inherit;opacity:.8}
+
+/* meters */
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meter{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.meter .big{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.meter .big small{font-size:13px;color:var(--muted);font-weight:500}
+.track{height:8px;background:var(--sunk);border-radius:999px;overflow:hidden;display:flex}
+.track i{display:block;height:100%;background:var(--bar)}
+.track i.ot{background:var(--bar-ot)}
+
+/* tabs */
+.seg{display:inline-flex;background:var(--sunk);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;padding:6px 16px;border-radius:8px;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.nav-period{display:flex;align-items:center;gap:6px}
+.nav-period button{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:34px;height:34px}
+.nav-period .p{min-width:9em;text-align:center;font-weight:700}
+
+/* week bars */
+.wk{display:flex;flex-direction:column;gap:6px}
+.wk-row{display:grid;grid-template-columns:62px 1fr 54px;align-items:center;gap:10px;font-size:13.5px}
+.wk-row .d{white-space:nowrap}
+.wk-row.off .d{color:var(--off-ink)}
+.wk-row .v{text-align:right}
+.wk-bar{position:relative;height:18px;background:var(--sunk);border-radius:5px;overflow:hidden}
+.wk-bar i{position:absolute;top:0;bottom:0;background:var(--bar);border-radius:5px}
+.wk-bar i.ot{background:var(--bar-ot);border-radius:0 5px 5px 0}
+.wk-bar .eight{position:absolute;top:0;bottom:0;border-left:1px dashed var(--muted);opacity:.6}
+.wk-row.today .d{font-weight:700}
+
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal .h{font-size:11.5px;text-align:center;color:var(--muted);padding-bottom:2px}
+.cal .h.sun,.cal .h.sat{color:var(--off-ink)}
+.cell{background:var(--sunk);border-radius:8px;padding:5px 5px 6px;min-height:58px;display:flex;flex-direction:column;gap:2px;position:relative;border:1px solid transparent;text-align:left}
+.cell.off{background:var(--off)}
+button.cell{font:inherit;color:inherit;cursor:pointer;min-height:48px}
+.cell.out{visibility:hidden}
+.cell.today{border-color:var(--accent)}
+.cell .n{font-size:11.5px;color:var(--muted);line-height:1}
+.cell.off .n{color:var(--off-ink)}
+.cell .h1{font-family:var(--mono);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:auto}
+.cell .h1.ot{color:var(--bar-ot)}
+.cell .hol{font-size:9.5px;color:var(--off-ink);line-height:1.1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.cell .flag{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--bad)}
+.cell.live .h1{color:var(--ok)}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.stat{background:var(--surface);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.stat .v{font-family:var(--mono);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .v.bad{color:var(--bad)}.stat .v.warn{color:var(--warn)}
+
+/* day list */
+.days{display:flex;flex-direction:column}
+.day{display:grid;grid-template-columns:66px 1fr auto;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:start}
+.day:first-child{border-top:0}
+.day .d{font-weight:700;font-size:14px;white-space:nowrap}
+.day.off .d{color:var(--off-ink)}
+.day .d small{display:block;font-weight:400;font-size:11px}
+.day .times{display:flex;flex-direction:column;gap:3px;min-width:0}
+.day .tline{font-family:var(--mono);font-size:13.5px;font-variant-numeric:tabular-nums}
+.day .chips{display:flex;gap:4px;flex-wrap:wrap}
+.day .w{text-align:right;font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
+.day .w small{display:block;font-family:var(--sans);font-weight:400;font-size:11px;color:var(--muted)}
+.plist{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.pitem{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px}
+.pitem.void{opacity:.5;text-decoration:line-through}
+
+/* table */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
+th,td{padding:9px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{font-size:11.5px;font-weight:500;color:var(--muted);background:var(--sunk)}
+th:first-child,td:first-child{text-align:left}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--sunk)}
+tbody tr[aria-selected="true"] td{background:var(--accent-soft)}
+tr:last-child td{border-bottom:0}
+
+/* bottom nav */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0));z-index:10}
+.tabs button{flex:1 1 0;max-width:180px;border:0;background:none;padding:8px 4px;border-radius:10px;color:var(--muted);font-weight:500;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12px}
+.tabs button svg{width:22px;height:22px}
+.tabs button[aria-current="page"]{color:var(--accent)}
+
+/* sheet (modal) */
+.sheet{position:fixed;inset:0;background:rgba(10,14,13,.55);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet-body{background:var(--surface);width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;gap:14px}
+@media (min-width:600px){.sheet{align-items:center}.sheet-body{border-radius:18px}}
+.cam{position:relative;background:#0B0F0E;border-radius:12px;overflow:hidden;aspect-ratio:3/4;max-height:52vh;width:100%;display:flex;align-items:center;justify-content:center}
+.cam video,.cam img{width:100%;height:100%;object-fit:cover}
+.cam .msg{color:#C9D3D0;font-size:13px;padding:16px;text-align:center;position:absolute}
+.loc{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:var(--sunk);font-size:13.5px}
+.loc.ok{background:var(--ok-soft)}.loc.warn{background:var(--warn-soft)}.loc.bad{background:var(--bad-soft)}
+.loc b{display:block}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:40;font-size:14px;max-width:calc(100% - 32px)}
+.err{color:var(--bad);font-size:13.5px}
+
+/* login */
+.login{max-width:380px;margin:0 auto;padding-block:12vh 24px;display:flex;flex-direction:column;gap:18px}
+.login .mark{font-size:28px;font-weight:700;letter-spacing:.02em;line-height:1.2}
+.login .mark span{display:block;font-size:13px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:6px}
+.photo-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--sunk);border:0;padding:0}
+.skel{color:var(--muted);font-size:13.5px;padding:8px 0}
+@media (max-width:420px){.meters{grid-template-columns:1fr}.day{grid-template-columns:54px 1fr auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet" class="sheet" hidden><div class="sheet-body" id="sheetBody"></div></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+'use strict';
+// ================= 設定 =================
+// ==== CALC START ====（ここから CALC END までを selftest.js が取り出して確かめる）
+const CONFIG = {
+  // ★ 導入のときに直すのはここ1か所だけ：Apps Script「ウェブアプリ」のURL（…/exec）。
+  //    空のままならデモモード（この端末だけに保存・サンプルデータ入り）
+  API_URL: '',
+  // ここから下は初期値。ログインすると、スプレッドシートの「設定」シートの値で上書きされる（applySettings）。
+  // 会社ごとの決まりは「設定」シートで変える。このファイルは直さない
+  COMPANY: '',
+  PHOTO: 'off',               // 写真：off=なし／shop=店内（背面カメラ）／self=本人（前面カメラ）
+  LOCATION: true,             // 位置情報を使うか
+  HOLIDAY_RULE: 'none',       // 休日ルール：none=区別しない／fixed=曜日固定／shift=シフト（月ごとに休みを登録）／calendar=暦どおり（土日祝）
+  CLOSED_DOWS: [],            // 店の定休曜日（0=日…6=土）。fixed・shift のとき
+  HOLIDAY_OFF: false,         // 祝日を休日にするか。fixed・shift のとき
+  CLOSING_DAY: 0,             // 締日：0=末日、1〜28=その日。「月」の集計・CSV はこの締日で区切る
+  // 法定休日：auto=指定しない（その週に休みが1日もないときだけ、週の最後の日）／dows=曜日で指定／closed=店の定休曜日
+  LEGAL_HOLIDAY: { mode: 'auto', dows: [] },
+  // 36協定：月・年の時間外の上限（分）、対象期間の起算月、特別条項の有無
+  A36: { month: 45 * 60, year: 360 * 60, start: 4, special: false },
+  LEAVE_DAY_MIN: 8 * 60,      // 有給1日の時間（分）。freee 人事労務用CSVで所定労働時間に入れる
+  DAILY_LIMIT: 8 * 60,        // 1日の上限（分）
+  WEEKLY_LIMIT: 40 * 60,      // 週の上限（分）
+  MONTH_TARGET: 176 * 60,     // 月の目安（分）
+  // 拘束時間（出勤〜退勤）が over 分以上なら brk 分の休憩を差し引く。上から順に判定
+  BREAK_RULES: [{ over: 8 * 60, brk: 60 }, { over: 6 * 60, brk: 45 }],
+  WEEK_START: 0,              // 週の起算日 0=日曜
+  NIGHT: [22, 5],             // 深夜時間帯 22:00〜翌5:00
+  // ここから下は設定シートでは変えない値
+  MAX_SHIFT_H: 20,            // これより長い出勤〜退勤は打刻漏れ扱い
+  // 法定の休憩：実働が6時間を超えたら45分、8時間を超えたら60分。届かない日に「休憩不足」の印を出す
+  LEGAL_BREAK: [{ over: 8 * 60, brk: 60 }, { over: 6 * 60, brk: 45 }],
+};
+// 祝日（「祝日」シートから届く。{ 'YYYY-MM-DD': '名称' }）
+let HOLIDAYS = {};
+// サーバーから届いた設定を反映する
+function applySettings(s) {
+  if (!s) return;
+  const map = { company: 'COMPANY', photo: 'PHOTO', location: 'LOCATION', holidayRule: 'HOLIDAY_RULE', closedDows: 'CLOSED_DOWS',
+    holidayOff: 'HOLIDAY_OFF', dailyLimit: 'DAILY_LIMIT', weeklyLimit: 'WEEKLY_LIMIT', weekStart: 'WEEK_START',
+    breakRules: 'BREAK_RULES', monthTarget: 'MONTH_TARGET', night: 'NIGHT', closingDay: 'CLOSING_DAY',
+    legalHoliday: 'LEGAL_HOLIDAY', a36: 'A36', leaveDayMin: 'LEAVE_DAY_MIN' };
+  Object.keys(map).forEach(k => { if (s[k] !== undefined && s[k] !== null) CONFIG[map[k]] = s[k]; });
+  CONFIG.BREAK_RULES = [...CONFIG.BREAK_RULES].sort((a, b) => b.over - a.over);
+  if (s.holidays) HOLIDAYS = s.holidays;
+}
+
+// ================= 日付・時間 =================
+const JST = 9 * 36e5;
+const DOW = ['日','月','火','水','木','金','土'];
+const dk = ts => new Date(ts + JST).toISOString().slice(0, 10);
+const hm = ts => new Date(ts + JST).toISOString().slice(11, 16);
+const addDays = (k, n) => new Date(Date.parse(k + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+const dowOf = k => new Date(k + 'T00:00:00Z').getUTCDay();
+const startTs = k => Date.parse(k + 'T00:00:00+09:00');
+// その人の休みの決まり。offDows＝休みの曜日（曜日固定のとき）、shift＝{ 'YYYY-MM': [休みの日] }（シフトのとき）
+const ruleOf = (st, months) => ({ offDows: (st && st.offDows) || [], shift: months || {} });
+// その日が休日か。休日ルール（設定）で決まる。rule は ruleOf の形（休みの曜日の配列を渡してもよい）
+function isOff(k, rule) {
+  const r = CONFIG.HOLIDAY_RULE;
+  if (r === 'none') return false;                                     // 区別しない
+  const d = dowOf(k);
+  if (r === 'calendar') return d === 0 || d === 6 || !!HOLIDAYS[k];   // 暦どおり（土日祝）
+  if (CONFIG.CLOSED_DOWS.includes(d) || (CONFIG.HOLIDAY_OFF && !!HOLIDAYS[k])) return true; // 店の定休曜日・祝日
+  if (r === 'shift') {                                                // シフト：その月に登録した休みの日
+    const days = rule && !Array.isArray(rule) && rule.shift && rule.shift[k.slice(0, 7)];
+    return !!days && days.includes(+k.slice(8));
+  }
+  return (Array.isArray(rule) ? rule : (rule && rule.offDows) || []).includes(d); // 曜日固定：本人の休みの曜日
+}
+// シフトのルールで、その日の月のシフトがまだ登録されていないか（未登録の月は休日なしとして数える）
+const shiftMissing = (k, rule) => CONFIG.HOLIDAY_RULE === 'shift' && !(rule && !Array.isArray(rule) && rule.shift && rule.shift[k.slice(0, 7)]);
+const showHoliday = () => CONFIG.HOLIDAY_RULE !== 'none';
+const weekStartOf = k => addDays(k, -((dowOf(k) - CONFIG.WEEK_START + 7) % 7));
+const monthKeys = m => { const [y, mo] = m.split('-').map(Number); const n = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  return Array.from({ length: n }, (_, i) => `${m}-${String(i + 1).padStart(2, '0')}`); };
+const addMonths = (m, n) => { const [y, mo] = m.split('-').map(Number); return new Date(Date.UTC(y, mo - 1 + n, 1)).toISOString().slice(0, 7); };
+const range = (a, b) => { const out = []; for (let k = a; k <= b; k = addDays(k, 1)) out.push(k); return out; };
+// 締日で区切った「月」。m＝締めの日がある月（20日締めなら 11月分＝10/21〜11/20）。末日締めならその月の1日〜末日
+function periodRange(m) {
+  const c = CONFIG.CLOSING_DAY;
+  if (!c) { const k = monthKeys(m); return [k[0], k[k.length - 1]]; }
+  return [addDays(`${addMonths(m, -1)}-${String(c).padStart(2, '0')}`, 1), `${m}-${String(c).padStart(2, '0')}`];
+}
+const periodKeys = m => { const [a, b] = periodRange(m); return range(a, b); };
+const periodOf = k => (CONFIG.CLOSING_DAY && +k.slice(8) > CONFIG.CLOSING_DAY ? addMonths(k.slice(0, 7), 1) : k.slice(0, 7));
+function periodLabel(m) {
+  if (!CONFIG.CLOSING_DAY) return `${m.slice(0, 4)}年${+m.slice(5)}月`;
+  const [a, b] = periodRange(m); return `${m.slice(0, 4)}年${+m.slice(5)}月分（${md(a)}〜${md(b)}）`;
+}
+const fm = m => { m = Math.max(0, Math.round(m || 0)); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+const fh = m => (Math.round((m || 0) / 6) / 10).toFixed(1); // 時間の10進（CSV用）
+const md = k => `${+k.slice(5, 7)}/${+k.slice(8, 10)}`;
+const today = () => dk(Date.now());
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+// ================= 勤務時間の計算 =================
+// 出勤→退勤を組にして、出勤日に帰属させる。休憩は「拘束時間」に応じて自動控除（中抜けの時間は休憩に算入）
+function buildDays(punches, now = Date.now()) {
+  const days = {};
+  const day = k => days[k] || (days[k] = { key: k, pairs: [], punches: [], flags: new Set() });
+  const valid = punches.filter(p => p.status !== '無効').sort((a, b) => a.ts - b.ts);
+  const ps = valid.filter(p => p.type !== 'note'); // note＝承認者が後から入れた休憩の申告（出退勤の組には入れない）
+  const MAX = CONFIG.MAX_SHIFT_H * 36e5;
+  const mark = (d, p) => { d.punches.push(p); if (p.judge && p.judge !== '区域内') d.flags.add(p.judge); };
+  let open = null;
+  for (const p of ps) {
+    if (p.type === 'in') {
+      if (open) day(dk(open.ts)).flags.add('退勤漏れ');
+      open = p; mark(day(dk(p.ts)), p);
+    } else if (open && p.ts - open.ts <= MAX) {
+      const d = day(dk(open.ts)); d.pairs.push({ a: open.ts, b: p.ts }); mark(d, p);
+      if (p.brk != null) d.decl = p.brk; // 退勤のときに本人が申告した休憩（分）
+      open = null;
+    } else {
+      if (open) day(dk(open.ts)).flags.add('退勤漏れ');
+      open = null; const d = day(dk(p.ts)); mark(d, p); d.flags.add('出勤漏れ');
+    }
+  }
+  if (open) {
+    const d = day(dk(open.ts));
+    if (now - open.ts <= MAX) { d.pairs.push({ a: open.ts, b: now, live: true }); d.live = true; }
+    else d.flags.add('退勤漏れ');
+  }
+  // 承認者が後から入れた休憩の申告。本人の申告より優先する（同じ日に複数あれば新しい方）
+  valid.filter(p => p.type === 'note').forEach(p => { const d = day(dk(p.ts)); d.punches.push(p); if (p.brk != null) d.decl = p.brk; });
+  // 無効化された打刻も明細には出す
+  punches.filter(p => p.status === '無効').forEach(p => day(dk(p.ts)).punches.push(p));
+  Object.values(days).forEach(d => { d.punches.sort((a, b) => a.ts - b.ts); calcDay(d); });
+  return days;
+}
+function calcDay(d) {
+  const m = d.pairs.map(x => ({ a: Math.floor(x.a / 6e4), b: Math.floor(x.b / 6e4) }));
+  if (!m.length) { Object.assign(d, { span: 0, gap: 0, brk: 0, reqBrk: 0, work: 0, night: 0 }); return; }
+  const first = Math.min(...m.map(x => x.a)), last = Math.max(...m.map(x => x.b));
+  const span = last - first, inside = m.reduce((s, x) => s + x.b - x.a, 0), gap = span - inside;
+  const req = (CONFIG.BREAK_RULES.find(r => span >= r.over) || { brk: 0 }).brk;
+  // いつもは「自動で引く分」と「中抜け」の多い方を引く。
+  // 休憩の申告があり、それが自動で引く分より短いときだけ、「申告した分」と「中抜け」の多い方を引く
+  const auto = Math.max(req, gap);
+  const own = d.decl != null ? Math.max(gap, d.decl) : auto;
+  const declared = own < auto;
+  Object.assign(d, { span, gap, reqBrk: req, brk: declared ? own : auto, first: first * 6e4, last: last * 6e4 });
+  d.work = Math.max(0, span - d.brk);
+  d.night = m.reduce((s, x) => s + nightOverlap(x.a, x.b), 0);
+  if (declared) d.flags.add('休憩申告');
+  // 法定の休憩に届かない日に印を出す（勤務中の日はまだ決まらないので除く）
+  const legal = (CONFIG.LEGAL_BREAK.find(r => d.work > r.over) || { brk: 0 }).brk;
+  if (!d.live && d.brk < legal) d.flags.add('休憩不足');
+}
+function nightOverlap(a, b) { // 分単位のUNIX時刻
+  const D = 1440, J = 540; let s = 0;
+  for (let t = Math.floor((a + J) / D) * D - J - D; t < b; t += D) {
+    const ns = t + CONFIG.NIGHT[0] * 60, ne = t + D + CONFIG.NIGHT[1] * 60;
+    s += Math.max(0, Math.min(b, ne) - Math.max(a, ns));
+  }
+  return s;
+}
+// 法定休日に当たる日。keys は週の起算日から並んだ連続した日
+function legalDays(days, keys) {
+  const out = new Set(), L = CONFIG.LEGAL_HOLIDAY || { mode: 'auto' };
+  if (L.mode === 'dows' || L.mode === 'closed') {
+    const ds = L.mode === 'closed' ? CONFIG.CLOSED_DOWS : (L.dows || []);
+    keys.forEach(k => { if (ds.includes(dowOf(k))) out.add(k); });
+    return out;
+  }
+  // 指定しない：週（起算日から7日）のすべての日に勤務があれば、その週の最後の日を法定休日とする（週の途中までしかない週は決めない）
+  for (let i = 0; i + 6 < keys.length; i += 7) {
+    const wk = keys.slice(i, i + 7);
+    if (wk.every(k => days[k] && days[k].work > 0)) out.add(wk[6]);
+  }
+  return out;
+}
+// 週40時間の超過は、週の起算日から日ごとに「1日8時間以内の分」を積み上げて判定（1日8時間超とは二重計上しない）。
+// 法定休日の勤務は時間外にも週の積み上げにも入れず、法定休日労働（legal）として別に数える
+function applyWeeks(days, keys) {
+  const legal = legalDays(days, keys);
+  let cum = 0, ws = null;
+  for (const k of keys) {
+    const w = weekStartOf(k); if (w !== ws) { ws = w; cum = 0; }
+    const d = days[k]; if (!d) continue;
+    if (legal.has(k)) { Object.assign(d, { dailyOT: 0, weeklyOT: 0, ot: 0, regular: 0, legal: d.work, holiday: d.work }); continue; }
+    const within = Math.min(d.work, CONFIG.DAILY_LIMIT);
+    const wOT = Math.max(0, cum + within - CONFIG.WEEKLY_LIMIT) - Math.max(0, cum - CONFIG.WEEKLY_LIMIT);
+    cum += within;
+    Object.assign(d, { dailyOT: d.work - within, weeklyOT: wOT, ot: d.work - within + wOT, regular: within - wOT, legal: 0,
+      holiday: isOff(k, days.off) ? d.work : 0 });
+  }
+}
+function summarize(days, keys) {
+  const s = { work: 0, regular: 0, ot: 0, night: 0, holiday: 0, legal: 0, workDays: 0, planDays: 0, planWorkDays: 0, offWorkDays: 0, legalDays: 0,
+    missing: 0, outside: 0, noloc: 0, brk: 0, brkDecl: 0, brkShort: 0, shiftMissing: 0 };
+  for (const k of keys) {
+    if (!isOff(k, days.off)) s.planDays++;
+    if (shiftMissing(k, days.off)) s.shiftMissing++;
+    const d = days[k]; if (!d) continue;
+    s.work += d.work; s.regular += d.regular || 0; s.ot += d.ot || 0; s.night += d.night; s.holiday += d.holiday || 0; s.legal += d.legal || 0; s.brk += d.brk;
+    if (d.work > 0) {
+      s.workDays++;
+      if (d.legal) s.legalDays++; else if (isOff(k, days.off)) s.offWorkDays++; else s.planWorkDays++; // 法定休日・所定休日・所定労働日
+    }
+    if (d.flags.has('退勤漏れ') || d.flags.has('出勤漏れ')) s.missing++;
+    if (d.flags.has('区域外')) s.outside++;
+    if (d.flags.has('位置情報なし') || d.flags.has('店舗の位置が未登録')) s.noloc++;
+    if (d.flags.has('休憩申告')) s.brkDecl++;
+    if (d.flags.has('休憩不足')) s.brkShort++;
+  }
+  return s;
+}
+// 期間（週の起算日から）を計算して返す。rule＝その人の休みの決まり（ruleOf の形。days.off として持ち回る）
+function analyze(punches, fromKey, toKey, rule) {
+  const days = buildDays(punches);
+  Object.defineProperty(days, 'off', { value: rule || [], enumerable: false });
+  applyWeeks(days, range(weekStartOf(fromKey), toKey));
+  return days;
+}
+
+// ================= 36協定 =================
+// 36協定の対象期間（1年）の始まりの月。m は締日で区切った「月」
+const agreementStart = m => { const y = +m.slice(0, 4), mo = +m.slice(5), s = CONFIG.A36.start;
+  return `${mo >= s ? y : y - 1}-${String(s).padStart(2, '0')}`; };
+// rows＝月ごとの { m, ot（法定時間外・分）, legal（法定休日労働・分） }。古い順で、月が抜けずに並ぶこと。
+// 各月に level（''／注意／超過）と reasons を付けて返す。年の累計と「月の上限超え」の回数は、対象期間（起算月から1年）ごとに数える
+function check36(rows) {
+  const A = CONFIG.A36, H = 60;
+  let year = null, cum = 0, overN = 0;
+  return rows.map((r, i) => {
+    const y = agreementStart(r.m);
+    if (y !== year) { year = y; cum = 0; overN = 0; }
+    cum += r.ot;
+    const res = { m: r.m, ot: r.ot, legal: r.legal, cum, level: '', reasons: [] };
+    const warn = t => { res.reasons.push(t); if (!res.level) res.level = '注意'; };
+    const bad = t => { res.reasons.push(t); res.level = '超過'; };
+    if (r.ot > A.month) {
+      overN++;
+      if (!A.special) bad(`月の上限（${A.month / H}時間）超え`);
+      else if (overN > 6) bad(`月${A.month / H}時間超えが年${overN}回目（特別条項でも年6回まで）`);
+      else warn(`特別条項で月${A.month / H}時間超え（年${overN}回目）`);
+    } else if (r.ot >= A.month * 0.8) warn(`月の上限（${A.month / H}時間）の8割`);
+    const yl = A.special ? 720 * H : A.year;
+    if (cum > yl) bad(`年の上限（${yl / H}時間）超え`);
+    else if (cum >= yl * 0.8) warn(`年の上限（${yl / H}時間）の8割`);
+    // 法律の上限（特別条項の有無にかかわらず）：時間外＋休日労働が月100時間未満、2〜6か月の平均が80時間以内
+    if (r.ot + r.legal >= 100 * H) bad('時間外＋休日労働が月100時間以上');
+    for (let n = 2; n <= 6 && i - n + 1 >= 0; n++) {
+      const avg = rows.slice(i - n + 1, i + 1).reduce((s, x) => s + x.ot + x.legal, 0) / n;
+      if (avg > 80 * H) { bad(`時間外＋休日労働の${n}か月平均が80時間超え`); break; }
+    }
+    return res;
+  });
+}
+
+// ================= freee 人事労務用CSV（勤怠サマリー・freee形式） =================
+// 列の並びは freee ヘルプ「他社サービスの勤怠データを取り込む（インポート）」のサンプル（【サンプル】勤怠_freee形式.csv）と同じ。
+// 時間はすべて分。実績がなければ0（空欄にしない）。アプリが持たない項目（遅刻・早退・欠勤・法定内残業）は0、任意の項目は空欄
+const FREEE_HEAD = ['従業員番号', '氏名', '所定労働時間（分）', '法定内残業時間（分）', '時間外労働時間（分）', '所定休日労働時間（分）',
+  '深夜労働時間（分）', '法定休日労働時間（分）', '総労働時間（分）', '総労働日数', '所定労働出勤日数', '所定休日出勤日数', '法定休日出勤日数',
+  '遅刻時間（分）', '早退時間（分）', '欠勤日数', '遅刻日数', '早退日数', '有休取得日数', '集計開始日', '集計終了日',
+  'みなし外の法定内残業時間（分）', 'みなし外の時間外労働時間（分）', '不足時間（分）'];
+// st＝スタッフ、days＝analyze の結果、keys＝締日で区切った期間の日、leaves＝その人の有給（承認済みだけ数える）
+function freeeRow(st, days, keys, leaves) {
+  const s = summarize(days, keys), inP = new Set(keys);
+  const lv = (leaves || []).filter(l => l.status === '承認' && inP.has(l.date));
+  const leaveDays = lv.reduce((a, l) => a + l.days, 0);
+  const leaveMin = Math.round(leaveDays * CONFIG.LEAVE_DAY_MIN);       // 有休取得分は所定労働時間に含める（freee の指示）
+  // 所定労働出勤日数：休日でない日に働いた日＋有給の日（同じ日は1回）
+  const planDates = new Set(keys.filter(k => days[k] && days[k].work > 0 && !days[k].legal && !isOff(k, days.off)));
+  lv.forEach(l => planDates.add(l.date));
+  const shotei = s.regular + leaveMin, total = shotei + s.ot + s.legal; // 総労働時間＝所定＋法定内残業（0）＋時間外＋法定休日
+  const slash = k => k.replace(/-/g, '/');
+  return [st.payrollId || st.id, st.name, shotei, 0, s.ot, '', s.night, s.legal, total,
+    planDates.size + s.offWorkDays + s.legalDays, planDates.size, s.offWorkDays, s.legalDays,
+    0, 0, 0, 0, 0, leaveDays, slash(keys[0]), slash(keys[keys.length - 1]), '', '', ''];
+}
+
+// ================= 出勤率（有給の付与の要件：全労働日の8割以上） =================
+// 休日でない日（全労働日）のうち、働いた日と有給を取った日の割合。休日に働いた日は数えない。
+// 休日ルールが「区別しない」・シフト未登録の月を含むときは、全労働日が分からないので null
+function attendanceRate(days, from, to, leaveDates) {
+  if (CONFIG.HOLIDAY_RULE === 'none' || from > to) return null;
+  let plan = 0, came = 0;
+  for (const k of range(from, to)) {
+    if (shiftMissing(k, days.off)) return null;
+    if (isOff(k, days.off)) continue;
+    plan++;
+    if ((days[k] && days[k].work > 0) || (leaveDates && leaveDates.has(k))) came++;
+  }
+  return plan ? { from, to, plan, came, rate: came / plan } : null;
+}
+
+// ================= 有給 =================
+// 打刻の修正・有給の承認ができるのは、「設定」シートの承認者IDのアカウントだけ。判定はサーバーが返す canEdit を使う
+const canEdit = me => !!me && !!me.canEdit;
+// 半休は時間帯（午前／午後）を区切らない。全日と半休の2区分のみ
+const LEAVE_KINDS = { '全日': 1, '半休': 0.5 };
+// 労基法どおりの法定付与（労基則24条の3）：入社6ヶ月で付与し、以後1年ごと。付与から2年で時効。
+// 週の所定労働日数が4日以下で、週30時間未満の人は比例付与（区分「週4日」〜「週1日」）。Code.gs の LEAVE_TABLES_ と同じ表
+const LEAVE_TABLES = {
+  '通常': [10, 11, 12, 14, 16, 18, 20],
+  '週4日': [7, 8, 9, 10, 12, 13, 15],
+  '週3日': [5, 6, 6, 8, 9, 10, 11],
+  '週2日': [3, 4, 4, 5, 6, 6, 7],
+  '週1日': [1, 2, 2, 2, 3, 3, 3],
+};
+const LEAVE_CLASSES = Object.keys(LEAVE_TABLES);
+function addMonthsKey(k, n) { // 日付(YYYY-MM-DD)に月数を加える。月末は月末に丸める
+  const p = k.split('-').map(Number);
+  const t = new Date(Date.UTC(p[0], p[1] - 1 + n, 1));
+  const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
+  t.setUTCDate(Math.min(p[2], last));
+  return t.toISOString().slice(0, 10);
+}
+// plan＝「有給の付与」シートの記録 { classes: [{ from, cls }], adjust: [{ date, days }] }
+// その日に有効な区分：from がその日以前で、いちばん新しい行（同じ日なら後から入れた行）。行がなければ「通常」。from が空なら入社時から
+function leaveClassAt(k, plan) {
+  let cls = '通常', at = null;
+  ((plan && plan.classes) || []).forEach(c => {
+    const f = c.from || '';
+    if (LEAVE_TABLES[c.cls] && f <= k && (at === null || f >= at)) { cls = c.cls; at = f; }
+  });
+  return cls;
+}
+// n回目（0から数える）の付与。区分は付与日の時点のもの。調整（付与日ごとの±日数）を足し引きし、0日より下にはしない
+function grantAt(hire, n, plan) {
+  const date = addMonthsKey(hire, 6 + 12 * n), cls = leaveClassAt(date, plan);
+  const base = LEAVE_TABLES[cls][Math.min(n, 6)];
+  const adj = ((plan && plan.adjust) || []).filter(a => a.date === date).reduce((s, a) => s + a.days, 0);
+  return { date, expire: addMonthsKey(hire, 30 + 12 * n), cls, base, adj, days: Math.max(0, base + adj) };
+}
+// 入社日と、これまでの有給（申請中＋承認済み）から、権利ごとの残日数（FIFOで古い権利から消化）を計算する
+function leaveLedger(hire, usedList, asOfKey, plan) {
+  if (!hire) return { grants: [], over: 0, avail: 0 };
+  let until = asOfKey || today();
+  usedList.forEach(u => { if (u.date > until) until = u.date; });
+  const grants = [];
+  for (let n = 0; ; n++) {
+    const g = grantAt(hire, n, plan);
+    if (g.date > until) break;
+    grants.push(Object.assign(g, { used: 0 }));
+  }
+  let over = 0;
+  [...usedList].sort((a, b) => a.date < b.date ? -1 : 1).forEach(u => {
+    let need = u.days;
+    grants.forEach(g => { if (need > 0 && g.date <= u.date && u.date < g.expire) { const t = Math.min(need, g.days - g.used); g.used += t; need -= t; } });
+    over += need;
+  });
+  const avail = grants.filter(g => g.expire > until).reduce((s, g) => s + (g.days - g.used), 0);
+  return { grants, over, avail };
+}
+function nextGrant(hire, asOfKey, plan) {
+  if (!hire) return null;
+  const k = asOfKey || today();
+  for (let n = 0; ; n++) { const g = grantAt(hire, n, plan); if (g.date > k) return g; }
+}
+// 年5日取得義務：直近の付与日から1年間で何日取ったか（付与が10日以上の人だけ）
+function fiveDayProgress(hire, usedList, asOfKey, plan) {
+  if (!hire) return null;
+  const k = asOfKey || today();
+  let cur = null;
+  for (let n = 0; ; n++) { const g = grantAt(hire, n, plan); if (g.date > k) break; cur = g; }
+  if (!cur || cur.days < 10) return null;
+  const periodEnd = addMonthsKey(cur.date, 12);
+  const taken = usedList.filter(u => u.status !== '却下' && u.status !== '取消' && u.date >= cur.date && u.date < periodEnd).reduce((s, u) => s + u.days, 0);
+  return { from: cur.date, to: periodEnd, taken, need: 5 };
+}
+
+// ================= 距離 =================
+function distM(a1, o1, a2, o2) {
+  const R = 6371000, r = Math.PI / 180, dA = (a2 - a1) * r, dO = (o2 - o1) * r;
+  const h = Math.sin(dA / 2) ** 2 + Math.cos(a1 * r) * Math.cos(a2 * r) * Math.sin(dO / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function nearest(lat, lng, acc, stores) {
+  let best = null;
+  for (const s of stores) { if (s.lat == null) continue; const d = distM(lat, lng, s.lat, s.lng); if (!best || d < best.d) best = { s, d }; }
+  if (!best) return null;
+  return { store: best.s.name, dist: Math.round(best.d), inside: best.d - Math.min(acc || 0, 100) <= best.s.radius, radius: best.s.radius };
+}
+// ==== CALC END ====
+
+// ================= API（本番 or デモ） =================
+async function api(action, data = {}) {
+  if (!CONFIG.API_URL) return Mock.call(action, { ...data, token: S.token });
+  let res;
+  try {
+    res = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ action, token: S.token, ...data }) });
+  } catch (e) { throw new Error('通信できませんでした。電波を確認してもう一度お試しください'); }
+  const j = await res.json().catch(() => { throw new Error('サーバーの応答を読めませんでした'); });
+  if (!j.ok) {
+    if (/ログイン/.test(j.error) && action !== 'login') logout(true);
+    throw new Error(j.error);
+  }
+  return j;
+}
+
+// デモモード（API_URL が空のとき）。サーバーの代わりに、この端末の中だけで動く
+const Mock = (() => {
+  const KEY = 'kintai_demo_v3';
+  const DEMO_HOLIDAYS = {
+    '2026-01-01':'元日','2026-01-12':'成人の日','2026-02-11':'建国記念の日','2026-02-23':'天皇誕生日',
+    '2026-03-20':'春分の日','2026-04-29':'昭和の日','2026-05-03':'憲法記念日','2026-05-04':'みどりの日',
+    '2026-05-05':'こどもの日','2026-05-06':'振替休日','2026-07-20':'海の日','2026-08-11':'山の日',
+    '2026-09-21':'敬老の日','2026-09-22':'国民の休日','2026-09-23':'秋分の日','2026-10-12':'スポーツの日',
+    '2026-11-03':'文化の日','2026-11-23':'勤労感謝の日',
+    '2027-01-01':'元日','2027-01-11':'成人の日','2027-02-11':'建国記念の日','2027-02-23':'天皇誕生日',
+    '2027-03-21':'春分の日','2027-03-22':'振替休日','2027-04-29':'昭和の日','2027-05-03':'憲法記念日',
+    '2027-05-04':'みどりの日','2027-05-05':'こどもの日','2027-07-19':'海の日','2027-08-11':'山の日',
+    '2027-09-20':'敬老の日','2027-09-23':'秋分の日','2027-10-11':'スポーツの日','2027-11-03':'文化の日',
+    '2027-11-23':'勤労感謝の日',
+  };
+  // デモは「火曜定休の美容室」。写真なし・位置あり
+  const DEF_SETTINGS = { company: 'サンプル美容室', editors: ['admin'], photo: 'off', location: true,
+    holidayRule: 'fixed', closedDows: [2], holidayOff: false, dailyLimit: 480, weeklyLimit: 2400, weekStart: 0,
+    breakRules: [{ over: 480, brk: 60 }, { over: 360, brk: 45 }], monthTarget: 176 * 60, night: [22, 5], closingDay: 0,
+    legalHoliday: { mode: 'auto', dows: [] }, a36: { month: 45 * 60, year: 360 * 60, start: 4, special: false }, leaveDayMin: 480 };
+  const STORES = [
+    { name: '1号店', lat: 35.6812, lng: 139.7671, radius: 150 },
+    { name: '2号店', lat: 35.6580, lng: 139.7016, radius: 150 },
+  ];
+  let db = null;
+  try { db = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  if (!db || !db.staff || !db.settings) db = seed();
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} };
+  function seed() {
+    const staff = [
+      { id: 'admin', name: '管理者（サンプル）', store: '本部', role: 'admin', pin: '0000', active: true, hire: '2022-04-01', offDows: [0] },
+      { id: 'S001', name: 'サンプル 花子', store: '1号店', role: 'staff', pin: '1234', active: true, hire: '2024-06-01', offDows: [3], payrollId: 'A001' },
+      { id: 'S002', name: 'サンプル 健', store: '2号店', role: 'staff', pin: '1234', active: true, hire: '2021-10-01', offDows: [1] },
+      // パート（週3日：水・金・土）。有給は比例付与
+      { id: 'S003', name: 'サンプル 葵（パート）', store: '1号店', role: 'staff', pin: '1234', active: true, hire: '2023-04-01', offDows: [0, 1, 4] },
+    ];
+    const plans = { S003: { classes: [{ from: '2023-04-01', cls: '週3日' }], adjust: [] } };
+    let x = 42; const r = () => (x = (x * 16807) % 2147483647) / 2147483647;
+    const punches = []; const t0 = today();
+    const add = (sid, k, h, m, type, store, off = 0, brk = null) => {
+      const s = STORES.find(z => z.name === store);
+      const ts = startTs(k) + (h * 60 + m) * 6e4;
+      const lat = s.lat + off, lng = s.lng + off;
+      const n = nearest(lat, lng, 20, STORES);
+      punches.push({ id: 'p' + punches.length, ts, staffId: sid, name: staff.find(z => z.id === sid).name, type,
+        lat, lng, acc: 20, store: n.store, dist: n.dist, judge: n.inside ? '区域内' : '区域外', photoId: '', source: '打刻', status: '有効', brk });
+    };
+    const rest = (s, k) => [2].concat(s.offDows).includes(dowOf(k)); // 火曜定休＋本人の休みの曜日
+    const from = addMonths(t0.slice(0, 7), -1) + '-01';
+    for (const k of range(from, addDays(t0, -1))) {
+      if (!rest(staff[1], k)) {
+        add('S001', k, 9, 48 + Math.floor(r() * 12), 'in', '1号店', k.endsWith('-08') ? .006 : 0);
+        // 12日と20日は「休憩が短かった」と申告した日
+        add('S001', k, 18 + Math.floor(r() * 2), Math.floor(r() * 59), 'out', '1号店', 0, k.endsWith('-12') ? 15 : k.endsWith('-20') ? 0 : null);
+      }
+      if (!rest(staff[2], k) && r() < .9) {
+        add('S002', k, 10, Math.floor(r() * 15), 'in', '2号店');
+        if (!k.endsWith('-15')) add('S002', k, 16 + Math.floor(r() * 3), Math.floor(r() * 59), 'out', '2号店');
+      }
+      if (!rest(staff[3], k)) {
+        add('S003', k, 11, Math.floor(r() * 10), 'in', '1号店');
+        add('S003', k, 16, 30 + Math.floor(r() * 20), 'out', '1号店');
+      }
+    }
+    const leaves = [
+      { id: 'l1', at: Date.now() - 5 * 864e5, staffId: 'S001', name: staff[1].name, date: addDays(today(), 4), kind: '全日', days: 1, reason: '私用', status: '申請中', by: '', decidedAt: null, comment: '' },
+      { id: 'l2', at: Date.now() - 20 * 864e5, staffId: 'S002', name: staff[2].name, date: addDays(today(), -10), kind: '全日', days: 1, reason: '通院', status: '承認', by: 'admin', decidedAt: Date.now() - 18 * 864e5, comment: '' },
+    ];
+    // シフト（休み）のサンプル：今月と先月を、休みの曜日どおりに登録しておく（「シフト」のルールに切り替えたとき用）
+    const shifts = {};
+    staff.forEach(s => { shifts[s.id] = {}; [addMonths(t0.slice(0, 7), -1), t0.slice(0, 7)].forEach(m =>
+      shifts[s.id][m] = monthKeys(m).filter(k => s.offDows.includes(dowOf(k))).map(k => +k.slice(8))); });
+    return { staff, punches, leaves, plans, shifts, photos: {}, stores: STORES, settings: JSON.parse(JSON.stringify(DEF_SETTINGS)) };
+  }
+  const planOfId = id => db.plans[id] || { classes: [], adjust: [] };
+  const planFor = id => db.plans[id] || (db.plans[id] = { classes: [], adjust: [] });
+  const pubSettings = () => { const { editors, ...rest } = db.settings; return { ...rest, holidays: DEMO_HOLIDAYS }; };
+  const editable = s => s.role === 'admin' && db.settings.editors.includes(s.id);
+  const who = token => { const id = String(token || '').replace(/^demo\./, ''); const s = db.staff.find(z => z.id === id && z.active); if (!s) throw new Error('ログインしてください'); return s; };
+  const pub = s => ({ id: s.id, name: s.name, store: s.store, role: s.role, active: s.active, hire: s.hire || '', offDows: s.offDows || [], payrollId: s.payrollId || '', canEdit: editable(s) });
+  const inRange = (p, q) => p.ts >= (q.from || 0) && p.ts < (q.to || 9e15);
+  const mustEdit = me => { if (!editable(me)) throw new Error('打刻の修正と有給の承認は、承認者だけができます'); };
+  const offDay = (k, s) => { const st = db.settings, d = dowOf(k);
+    if (st.holidayRule === 'none') return false;
+    if (st.holidayRule === 'calendar') return d === 0 || d === 6 || !!DEMO_HOLIDAYS[k];
+    if (st.closedDows.includes(d) || (st.holidayOff && !!DEMO_HOLIDAYS[k])) return true;
+    if (st.holidayRule === 'shift') return ((db.shifts[s.id] || {})[k.slice(0, 7)] || []).includes(+k.slice(8));
+    return (s.offDows || []).includes(d); };
+  const brkMin = v => { if (v === undefined || v === null || v === '') return null; const n = Number(v);
+    if (!(Number.isInteger(n) && n >= 0 && n <= 600)) throw new Error('休憩は 0〜600 分の整数で入れてください'); return n; };
+  const staffOf = id => { const s = db.staff.find(z => z.id === id); if (!s) throw new Error('スタッフが見つかりません'); return s; };
+  async function call(action, q) {
+    await new Promise(r => setTimeout(r, 120));
+    if (action === 'info') return { ok: true, company: db.settings.company };
+    if (action === 'login') {
+      const s = db.staff.find(z => z.id === String(q.id).trim() && z.active);
+      if (!s || s.pin !== q.pin) throw new Error('スタッフIDかPINが違います');
+      return { ok: true, token: 'demo.' + s.id, me: pub(s), stores: db.stores, settings: pubSettings() };
+    }
+    const me = who(q.token);
+    const admin = () => { if (me.role !== 'admin') throw new Error('管理者だけが使える操作です'); };
+    switch (action) {
+      case 'bootstrap': return { ok: true, me: pub(me), stores: db.stores, settings: pubSettings() };
+      case 'punches': return { ok: true, punches: db.punches.filter(p => p.staffId === me.id && inRange(p, q)), shifts: db.shifts[me.id] || {} };
+      case 'setShift': {
+        admin(); staffOf(q.staffId);
+        if (!/^\d{4}-\d{2}$/.test(q.month || '')) throw new Error('月を選んでください');
+        const max = monthKeys(q.month).length;
+        const days = [...new Set((q.days || []).map(Number))].filter(n => Number.isInteger(n) && n >= 1 && n <= max).sort((a, b) => a - b);
+        (db.shifts[q.staffId] || (db.shifts[q.staffId] = {}))[q.month] = days; save();
+        return { ok: true, shifts: db.shifts };
+      }
+      case 'punch': {
+        const st = db.settings;
+        const last = [...db.punches].reverse().find(p => p.staffId === me.id && p.status !== '無効' && p.type !== 'note');
+        const type = q.type === 'out' ? 'out' : 'in';
+        if (st.photo !== 'off' && !q.photo) throw new Error('写真がありません。撮影してから打刻してください');
+        const brk = type === 'out' ? brkMin(q.brk) : null;
+        if (last && last.type === type && Date.now() - last.ts < 2 * 6e4) throw new Error('直前に同じ打刻があります（2分以内の重複）');
+        const n = st.location && q.lat != null ? nearest(q.lat, q.lng, q.acc, db.stores) : null;
+        const pid = st.photo !== 'off' ? 'ph' + Date.now() : '';
+        if (pid) db.photos[pid] = q.photo;
+        const p = { id: 'p' + Date.now(), ts: Date.now(), staffId: me.id, name: me.name, type,
+          lat: st.location ? q.lat : null, lng: st.location ? q.lng : null, acc: st.location ? q.acc : null,
+          store: n ? n.store : '', dist: n ? n.dist : null,
+          judge: !st.location ? '' : q.lat == null ? '位置情報なし' : !n ? '店舗の位置が未登録' : n.inside ? '区域内' : '区域外',
+          photoId: pid, source: '打刻', status: '有効', brk };
+        db.punches.push(p); save();
+        return { ok: true, punch: p };
+      }
+      case 'photo': {
+        const p = db.punches.find(z => z.photoId === q.photoId);
+        if (!p || !db.photos[q.photoId]) throw new Error('写真が見つかりません');
+        if (me.role !== 'admin' && p.staffId !== me.id) throw new Error('他の人の写真は見られません');
+        return { ok: true, dataUrl: db.photos[q.photoId] };
+      }
+      case 'changePin':
+        if (q.oldPin !== me.pin) throw new Error('今のPINが違います');
+        if (!/^\d{4,8}$/.test(q.newPin)) throw new Error('PINは4〜8桁の数字にしてください');
+        me.pin = q.newPin; save(); return { ok: true };
+      case 'leaves': return { ok: true, leaves: db.leaves.filter(l => l.staffId === me.id), hire: me.hire || '', plan: planOfId(me.id) };
+      case 'setLeaveClass': {
+        mustEdit(me); staffOf(q.staffId);
+        if (!LEAVE_TABLES[q.cls]) throw new Error('区分を選んでください');
+        if (q.from && !/^\d{4}-\d{2}-\d{2}$/.test(q.from)) throw new Error('いつからの日付の形式が不正です');
+        planFor(q.staffId).classes.push({ from: q.from || '', cls: q.cls }); save(); return { ok: true, plans: db.plans };
+      }
+      case 'adjustGrant': {
+        mustEdit(me); const s = staffOf(q.staffId); if (!s.hire) throw new Error('入社日が未登録です');
+        const days = Number(q.days);
+        let isGrant = false; for (let n = 0; n < 60; n++) { const g = addMonthsKey(s.hire, 6 + 12 * n); if (g === q.date) { isGrant = true; break; } if (g > q.date) break; }
+        if (!isGrant) throw new Error('付与日を選んでください');
+        if (!(days !== 0 && Math.abs(days) <= 40 && Math.round(days * 2) === days * 2)) throw new Error('日数は0.5日単位で、0以外を入れてください（減らすときはマイナス）');
+        if (!String(q.reason || '').trim()) throw new Error('理由を入れてください');
+        planFor(q.staffId).adjust.push({ date: q.date, days }); save(); return { ok: true, plans: db.plans };
+      }
+      case 'leaveRequest': {
+        const date = String(q.date || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('取得日を選んでください');
+        const days = LEAVE_KINDS[q.kind]; if (!days) throw new Error('区分を選んでください');
+        if (offDay(date, me)) throw new Error('その日はもともと休日なので申請できません');
+        if (!me.hire) throw new Error('入社日が未登録のため残日数を計算できません。承認者に登録を頼んでください');
+        const mine = db.leaves.filter(l => l.staffId === me.id);
+        if (mine.some(l => l.date === date && (l.status === '申請中' || l.status === '承認'))) throw new Error('その日はすでに申請しています');
+        const bal = leaveLedger(me.hire, mine.filter(l => l.status === '申請中' || l.status === '承認').concat([{ date, days }]).map(l => ({ date: l.date, days: l.days })), date, planOfId(me.id));
+        if (bal.over > 0) throw new Error('有給の残日数が足りません（申請中を含めて計算）');
+        const l = { id: 'l' + Date.now(), at: Date.now(), staffId: me.id, name: me.name, date, kind: q.kind, days, reason: String(q.reason || '').slice(0, 200), status: '申請中', by: '', decidedAt: null, comment: '' };
+        db.leaves.push(l); save(); return { ok: true, leave: l };
+      }
+      case 'leaveCancel': {
+        const l = db.leaves.find(z => z.id === q.leaveId); if (!l) throw new Error('申請が見つかりません');
+        if (l.staffId !== me.id) throw new Error('自分の申請だけ取り消せます');
+        if (l.status !== '申請中') throw new Error('承認済みの有給は、承認者に取り消しを頼んでください');
+        l.status = '取消'; l.by = me.id; l.decidedAt = Date.now(); save(); return { ok: true };
+      }
+      case 'setHire': {
+        admin();
+        const hire = String(q.hire || ''); if (!/^\d{4}-\d{2}-\d{2}$/.test(hire)) throw new Error('入社日を入れてください');
+        staffOf(q.staffId).hire = hire; save(); return { ok: true, staff: db.staff.map(pub) };
+      }
+      case 'setPayrollId': {
+        admin(); const v = String(q.payrollId || '').trim();
+        if (v.length > 255) throw new Error('従業員番号は255文字までです');
+        if (v && db.staff.some(z => z.id !== q.staffId && z.payrollId === v)) throw new Error('その従業員番号は、ほかのスタッフに使われています');
+        staffOf(q.staffId).payrollId = v; save(); return { ok: true, staff: db.staff.map(pub) };
+      }
+      case 'setOffDows': {
+        admin();
+        const list = (Array.isArray(q.dows) ? q.dows : []).map(Number).filter(d => Number.isInteger(d) && d >= 0 && d <= 6);
+        staffOf(q.staffId).offDows = [...new Set(list)].sort(); save(); return { ok: true, staff: db.staff.map(pub) };
+      }
+      case 'leaveDecide': {
+        mustEdit(me);
+        const l = db.leaves.find(z => z.id === q.leaveId); if (!l) throw new Error('申請が見つかりません');
+        const to = q.decision;
+        const ok = (l.status === '申請中' && (to === '承認' || to === '却下')) || (l.status === '承認' && to === '取消');
+        if (!ok) throw new Error('この申請は「' + l.status + '」なので「' + to + '」にできません');
+        if (to === '却下' && !String(q.comment || '').trim()) throw new Error('却下の理由を入れてください');
+        l.status = to; l.by = me.id; l.decidedAt = Date.now(); l.comment = String(q.comment || '').slice(0, 200);
+        save(); return { ok: true };
+      }
+      case 'leavePast': {
+        mustEdit(me);
+        const s = staffOf(q.staffId);
+        const date = String(q.date || ''), days = Number(q.days);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('取得日を入れてください');
+        if (!(days > 0 && days <= 40 && Math.round(days * 2) === days * 2)) throw new Error('日数は0.5日単位で入れてください');
+        db.leaves.push({ id: 'l' + Date.now(), at: Date.now(), staffId: s.id, name: s.name, date, kind: '導入前取得', days, reason: String(q.reason || ''), status: '承認', by: me.id, decidedAt: Date.now(), comment: '承認者が登録' });
+        save(); return { ok: true };
+      }
+      case 'allPunches': admin(); return { ok: true, punches: db.punches.filter(p => inRange(p, q)), staff: db.staff.map(pub), leaves: db.leaves, plans: db.plans, shifts: db.shifts };
+      case 'yearData': {
+        admin(); const firsts = {};
+        db.punches.forEach(p => { if (p.status !== '無効' && p.type !== 'note' && (!(p.staffId in firsts) || p.ts < firsts[p.staffId])) firsts[p.staffId] = p.ts; });
+        return { ok: true, punches: db.punches.filter(p => inRange(p, q)), firsts, staff: db.staff.map(pub), leaves: db.leaves, plans: db.plans, shifts: db.shifts };
+      }
+      case 'addStaff': {
+        admin();
+        if (!/^[A-Za-z0-9_-]{2,20}$/.test(q.id || '')) throw new Error('スタッフIDは英数字2〜20文字にしてください');
+        if (db.staff.some(z => z.id === q.id)) throw new Error('そのスタッフIDは使われています');
+        if (!String(q.name || '').trim()) throw new Error('氏名を入れてください');
+        if (!/^\d{4,8}$/.test(q.pin || '')) throw new Error('PINは4〜8桁の数字にしてください');
+        const hire = String(q.hire || ''); if (hire && !/^\d{4}-\d{2}-\d{2}$/.test(hire)) throw new Error('入社日の形式が不正です');
+        const cls = q.cls || '通常'; if (!LEAVE_TABLES[cls]) throw new Error('有給の区分が不正です');
+        db.staff.push({ id: q.id, name: q.name.trim(), store: q.store, role: q.role === 'admin' ? 'admin' : 'staff', pin: q.pin, active: true, hire, offDows: [] });
+        if (cls !== '通常') planFor(q.id).classes.push({ from: hire, cls });
+        save(); return { ok: true, staff: db.staff.map(pub), plans: db.plans };
+      }
+      case 'resetPin': { admin(); if (!/^\d{4,8}$/.test(q.pin || '')) throw new Error('PINは4〜8桁の数字にしてください');
+        staffOf(q.staffId).pin = q.pin; save(); return { ok: true }; }
+      case 'setActive': { admin(); if (q.staffId === me.id) throw new Error('自分自身は無効にできません');
+        staffOf(q.staffId).active = !!q.active; save(); return { ok: true, staff: db.staff.map(pub) }; }
+      case 'addPunch': {
+        mustEdit(me); if (!q.ts) throw new Error('日時を入れてください'); if (!String(q.reason || '').trim()) throw new Error('修正の理由を入れてください');
+        const s = staffOf(q.staffId);
+        const p = { id: 'p' + Date.now(), ts: q.ts, staffId: s.id, name: s.name, type: q.type === 'out' ? 'out' : 'in', judge: '手動修正',
+          source: '手動', reason: q.reason, by: me.id, status: '有効', brk: null };
+        db.punches.push(p); save(); return { ok: true, punch: p };
+      }
+      case 'setBreak': {
+        mustEdit(me);
+        const s = staffOf(q.staffId);
+        const date = String(q.date || ''); if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('日付を入れてください');
+        const brk = brkMin(q.brk); if (brk === null) throw new Error('実際に取れた休憩（分）を入れてください');
+        if (!String(q.reason || '').trim()) throw new Error('理由を入れてください');
+        const p = { id: 'p' + Date.now(), ts: startTs(date) + 12 * 36e5, staffId: s.id, name: s.name, type: 'note', judge: '手動修正',
+          source: '手動', reason: q.reason, by: me.id, status: '有効', brk };
+        db.punches.push(p); save(); return { ok: true, punch: p };
+      }
+      case 'voidPunch': { mustEdit(me); if (!String(q.reason || '').trim()) throw new Error('無効にする理由を入れてください');
+        const p = db.punches.find(z => z.id === q.punchId); if (!p) throw new Error('打刻が見つかりません');
+        p.status = '無効'; p.reason = [p.reason, '無効化:' + q.reason].filter(Boolean).join(' / ');
+        save(); return { ok: true }; }
+      case 'setStore': { admin(); const s = db.stores.find(z => z.name === q.name); if (!s) throw new Error('店舗が見つかりません');
+        if (q.lat != null) { s.lat = q.lat; s.lng = q.lng; } if (q.radius != null) s.radius = Math.max(30, Math.min(1000, q.radius));
+        save(); return { ok: true, stores: db.stores }; }
+    }
+    throw new Error('不明な操作です');
+  }
+  return { call,
+    reset() { try { localStorage.removeItem(KEY); } catch (e) {} db = seed(); },
+    // デモの設定を切り替える（本番では「設定」シートで変える）
+    settings() { return pubSettings(); },
+    setSettings(patch) { Object.assign(db.settings, patch); save(); return pubSettings(); } };
+})();
+
+// ================= 状態 =================
+const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} } };
+const S = {
+  token: LS.get('kintai_token'), me: null, stores: [],
+  tab: 'punch', view: 'week', week: weekStartOf(today()), month: today().slice(0, 7),
+  mine: null,            // {from,to,punches}
+  leave: null,           // {leaves,hire}
+  adm: { month: today().slice(0, 7), data: null, sel: null, loading: null, year: null },
+  menu: false,
+};
+const app = document.getElementById('app');
+// 締日は設定を読んでから分かるので、「今の月」はログインのあとに決め直す
+function resetPeriods() { S.month = periodOf(today()); S.adm.month = S.month; S.adm.data = null; }
+
+// ================= 起動 =================
+async function boot() {
+  if (!S.token) return renderLogin();
+  try {
+    const r = await api('bootstrap');
+    applySettings(r.settings); resetPeriods();
+    S.me = r.me; S.stores = r.stores;
+    render(); loadMine();
+    if (canEdit(S.me)) loadAdmin(); // 承認待ちバッジのため裏で読み込む
+  } catch (e) { logout(true); }
+}
+function logout(silent) {
+  S.token = null; S.me = null; S.mine = null; S.leave = null; S.adm.data = null; LS.set('kintai_token', null);
+  renderLogin(silent ? '' : 'ログアウトしました');
+}
+
+// ================= ログイン =================
+function renderLogin(msg = '') {
+  app.innerHTML = `
+  <div class="login">
+    <div class="mark"><b id="coName">${CONFIG.COMPANY ? esc(CONFIG.COMPANY) + ' ' : ''}</b>勤怠<span>出勤・退勤の打刻</span></div>
+    ${!CONFIG.API_URL ? `<div class="demo">デモモードです。データはこの端末の中だけに保存されます。<br>
+      サンプル: スタッフ <b>S001</b> / PIN <b>1234</b>　管理者(修正・承認権限あり) <b>admin</b> / PIN <b>0000</b></div>` : ''}
+    <form id="loginForm" class="panel" autocomplete="on">
+      <div class="field"><label class="label" for="lid">スタッフID</label>
+        <input id="lid" name="username" autocomplete="username" autocapitalize="off" required></div>
+      <div class="field"><label class="label" for="lpin">PIN</label>
+        <input id="lpin" name="password" type="password" inputmode="numeric" autocomplete="current-password" required></div>
+      <div class="err" id="lerr">${esc(msg)}</div>
+      <button class="btn primary" type="submit">ログイン</button>
+    </form>
+    <p class="muted small">PINを忘れたときは管理者にリセットを頼んでください。</p>
+  </div>`;
+  // 会社名はログイン前でも出す（「設定」シートの会社名）
+  if (!CONFIG.COMPANY) api('info').then(r => { if (r.company) { CONFIG.COMPANY = r.company; const el = document.getElementById('coName'); if (el) el.textContent = r.company + ' '; } }).catch(() => {});
+  document.getElementById('loginForm').onsubmit = async e => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button'); btn.disabled = true;
+    try {
+      const r = await api('login', { id: lid.value.trim(), pin: lpin.value });
+      applySettings(r.settings); resetPeriods();
+      S.token = r.token; S.me = r.me; S.stores = r.stores; LS.set('kintai_token', r.token);
+      S.tab = 'punch'; render(); loadMine();
+    } catch (err) { document.getElementById('lerr').textContent = err.message; btn.disabled = false; }
+  };
+}
+
+// ================= データ読込 =================
+function mineRange() {
+  const mk = periodKeys(S.month);
+  // 表示中の月・週に加え、打刻画面の「今月」（締日で区切った今日の月）も読む
+  const from = [weekStartOf(mk[0]), S.week, weekStartOf(today()), periodRange(periodOf(today()))[0]].sort()[0];
+  const to = [mk[mk.length - 1], addDays(S.week, 6), today()].sort().pop();
+  return { from, to };
+}
+async function loadMine() {
+  const { from, to } = mineRange();
+  if (S.mine && S.mine.from <= from && S.mine.to >= to) return render();
+  try {
+    const r = await api('punches', { from: startTs(addDays(from, -1)), to: startTs(addDays(to, 1)) });
+    S.mine = { from, to, punches: r.punches, shifts: r.shifts || {} };
+  } catch (e) { toast(e.message); S.mine = S.mine || { from, to, punches: [], shifts: {} }; }
+  render();
+}
+async function loadLeave(force) {
+  if (S.leave && !force) return render();
+  try {
+    const r = await api('leaves');
+    S.leave = { leaves: r.leaves, hire: r.hire || '', plan: r.plan || null };
+  } catch (e) { toast(e.message); S.leave = S.leave || { leaves: [], hire: '', plan: null }; }
+  render();
+}
+async function loadAdmin(force) {
+  const m = S.adm.month, mk = periodKeys(m);
+  if (!force && S.adm.data && S.adm.data.month === m) return render();
+  if (S.adm.loading === m && !force) return;
+  S.adm.loading = m; S.adm.data = null; render();
+  try {
+    const r = await api('allPunches', { from: startTs(addDays(weekStartOf(mk[0]), -1)), to: startTs(addDays(mk[mk.length - 1], 1)) });
+    S.adm.data = { month: m, punches: r.punches, staff: r.staff, leaves: r.leaves, plans: r.plans || {}, shifts: r.shifts || {} };
+  } catch (e) { toast(e.message); S.adm.data = { month: m, punches: [], staff: [], leaves: [], plans: {}, shifts: {} }; }
+  S.adm.loading = null;
+  if (S.adm.month !== m) return loadAdmin();
+  render();
+}
+
+// ================= 描画 =================
+const ICON = {
+  punch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>',
+  hours: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7 14h2M11 14h2M15 14h2M7 17h2M11 17h2"/></svg>',
+  admin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 5.5a3 3 0 0 1 0 5.8M18 14.8c1.8.7 3 2.4 3.5 5.2"/></svg>',
+  leave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="M8 14l2.5 2.5L16.5 11"/></svg>',
+};
+function render() {
+  if (!S.me) return renderLogin();
+  const isAdmin = S.me.role === 'admin';
+  if (S.tab === 'admin' && !isAdmin) S.tab = 'punch';
+  const body = S.tab === 'punch' ? viewPunch() : S.tab === 'hours' ? viewHours() : S.tab === 'leave' ? viewLeave() : viewAdmin();
+  const pending = S.tab !== 'admin' && canEdit(S.me) && S.adm.data && S.adm.data.leaves && S.adm.data.leaves.filter(l => l.status === '申請中').length;
+  app.innerHTML = `
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">${esc(CONFIG.COMPANY ? CONFIG.COMPANY + ' 勤怠' : '勤怠')}<small>${esc(S.me.name)}・${esc(S.me.store || '')}</small></div>
+      <div class="menu">
+        <button class="btn sm" id="menuBtn" aria-expanded="${S.menu}" aria-haspopup="true">メニュー</button>
+        ${S.menu ? `<div class="menu-list" role="menu">
+          <button role="menuitem" data-act="pin">PINを変更</button>
+          ${!CONFIG.API_URL ? '<button role="menuitem" data-act="demoset">デモの設定を変える</button><button role="menuitem" data-act="demoreset">デモのデータを初期化</button>' : ''}
+          <button role="menuitem" data-act="logout">ログアウト</button></div>` : ''}
+      </div>
+    </header>
+    ${!CONFIG.API_URL ? '<div class="demo">デモモード：サンプルの打刻データを表示しています（この端末だけに保存）</div>' : ''}
+    ${body}
+  </div>
+  <nav class="tabs" aria-label="画面切り替え">
+    <button data-tab="punch" ${S.tab === 'punch' ? 'aria-current="page"' : ''}>${ICON.punch}打刻</button>
+    <button data-tab="hours" ${S.tab === 'hours' ? 'aria-current="page"' : ''}>${ICON.hours}勤務時間</button>
+    <button data-tab="leave" ${S.tab === 'leave' ? 'aria-current="page"' : ''}>${ICON.leave}有給</button>
+    ${isAdmin ? `<button data-tab="admin" ${S.tab === 'admin' ? 'aria-current="page"' : ''}>${ICON.admin}管理${pending ? `<span class="chip bad" style="position:absolute;transform:translate(6px,-20px)">${pending}</span>` : ''}</button>` : ''}
+  </nav>`;
+  if (S.tab === 'punch') tickClock();
+}
+
+// ---------- 打刻画面 ----------
+function myDays() {
+  if (!S.mine) return null;
+  return analyze(S.mine.punches, S.mine.from, S.mine.to, myRule());
+}
+const myRule = () => ruleOf(S.me, S.mine && S.mine.shifts);
+function currentState(days) {
+  const ps = (S.mine ? S.mine.punches : []).filter(p => p.status !== '無効').sort((a, b) => a.ts - b.ts);
+  const last = ps[ps.length - 1];
+  if (last && last.type === 'in' && Date.now() - last.ts <= CONFIG.MAX_SHIFT_H * 36e5) return { working: true, since: last.ts };
+  const t = days && days[today()];
+  if (t && t.work > 0) return { working: false, doneToday: true, last: t.last };
+  return { working: false };
+}
+function viewPunch() {
+  const days = myDays();
+  const t = today(), st = currentState(days);
+  const hol = HOLIDAYS[t];
+  const td = days && days[t];
+  const wk = days ? summarize(days, range(weekStartOf(t), addDays(weekStartOf(t), 6))) : null;
+  const pm = periodOf(t);
+  const mo = days ? summarize(days, periodKeys(pm)) : null;
+  const stateText = st.working ? `勤務中（${hm(st.since)} 出勤）` : st.doneToday ? `退勤済み（${hm(st.last)}）` : '未出勤';
+  return `
+  <section class="panel">
+    <div class="clock">
+      <div class="label">${+t.slice(5, 7)}月${+t.slice(8, 10)}日（${DOW[dowOf(t)]}）${isOff(t, myRule()) ? `<span class="chip off">${esc(hol || '休日')}</span>` : hol ? `<span class="chip">${esc(hol)}</span>` : ''}</div>
+      <div class="time" id="clock"></div>
+    </div>
+    <div class="state">
+      <span class="dot ${st.working ? 'on' : ''}"></span><b>${stateText}</b>
+      ${td && td.work ? `<span class="muted small">今日の実働 <span class="num">${fm(td.work)}</span>（休憩 ${fm(td.brk)}）</span>` : ''}
+    </div>
+    <div class="punch-btns">
+      <button class="pbtn ${st.working ? '' : 'main'}" data-punch="in"><b>出勤</b><span>${punchSub()}</span></button>
+      <button class="pbtn ${st.working ? 'main' : ''}" data-punch="out"><b>退勤</b><span>${punchSub()}</span></button>
+    </div>
+  </section>
+  ${wk ? `<div class="meters">
+    ${meter('今週', wk.work, CONFIG.WEEKLY_LIMIT, wk.ot)}
+    ${meter(`${+pm.slice(5)}月${CONFIG.CLOSING_DAY ? '分' : ''}`, mo.work, CONFIG.MONTH_TARGET, mo.ot)}
+  </div>` : '<div class="skel">勤務時間を読み込んでいます…</div>'}
+  ${days ? `<section class="panel"><div class="row"><h2 class="grow">今週の記録</h2>
+    <button class="btn sm" data-go="hours">詳しく見る</button></div>${weekBars(days, weekStartOf(t))}</section>` : ''}`;
+}
+const punchSub = () => usePhoto() && CONFIG.LOCATION ? '写真と位置で記録' : usePhoto() ? '写真で記録' : CONFIG.LOCATION ? '位置で記録' : 'タップで記録';
+function meter(title, work, target, ot) {
+  const pct = Math.min(100, work / target * 100), otPct = Math.min(100 - pct, ot / target * 100);
+  const rest = target - work;
+  return `<div class="meter">
+    <div class="label">${esc(title)}の実働</div>
+    <div class="big">${fm(work)} <small>/ ${fm(target)}</small></div>
+    <div class="track" role="img" aria-label="${esc(title)} ${fm(work)} / ${fm(target)}"><i style="width:${pct - otPct}%"></i><i class="ot" style="width:${otPct}%"></i></div>
+    <div class="small muted">${rest > 0 ? `あと <span class="num">${fm(rest)}</span>` : `<span style="color:var(--warn)">目安を <span class="num">${fm(-rest)}</span> 超過</span>`}${ot ? `・時間外 <span class="num">${fm(ot)}</span>` : ''}</div>
+  </div>`;
+}
+let clockTimer;
+function tickClock() {
+  clearInterval(clockTimer);
+  const f = () => { const el = document.getElementById('clock'); if (!el) return clearInterval(clockTimer);
+    const s = new Date(Date.now() + JST).toISOString(); el.innerHTML = `${s.slice(11, 16)}<span class="sec">${s.slice(17, 19)}</span>`; };
+  f(); clockTimer = setInterval(f, 1000);
+}
+
+// ---------- 週バー ----------
+function weekBars(days, ws) {
+  const max = 12 * 60;
+  return `<div class="wk">${range(ws, addDays(ws, 6)).map(k => {
+    const d = days[k]; const w = d ? d.work : 0; const ot = d ? d.ot || 0 : 0;
+    const base = Math.min(w - ot, max), otw = Math.min(ot, max - base);
+    return `<div class="wk-row ${isOff(k, days.off) ? 'off' : ''} ${k === today() ? 'today' : ''}">
+      <div class="d">${md(k)} ${DOW[dowOf(k)]}</div>
+      <div class="wk-bar" title="${HOLIDAYS[k] ? esc(HOLIDAYS[k]) : ''}">
+        <span class="eight" style="left:${CONFIG.DAILY_LIMIT / max * 100}%"></span>
+        <i style="left:0;width:${base / max * 100}%"></i>
+        ${otw > 0 ? `<i class="ot" style="left:${base / max * 100}%;width:${otw / max * 100}%"></i>` : ''}
+      </div>
+      <div class="v num">${w ? fm(w) : d && d.flags.size ? '<span class="chip bad">要確認</span>' : '<span class="muted">—</span>'}</div>
+    </div>`; }).join('')}
+    <div class="small muted">点線＝1日8時間。オレンジは時間外（1日8時間超・週40時間超）。</div></div>`;
+}
+
+// ---------- 月カレンダー ----------
+function monthCal(days, m) {
+  const keys = periodKeys(m); const lead = (dowOf(keys[0]) - CONFIG.WEEK_START + 7) % 7;
+  const heads = Array.from({ length: 7 }, (_, i) => (i + CONFIG.WEEK_START) % 7);
+  let cells = heads.map(i => `<div class="h ${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${DOW[i]}</div>`).join('');
+  for (let i = 0; i < lead; i++) cells += '<div class="cell out"></div>';
+  for (const k of keys) {
+    const d = days[k];
+    cells += `<div class="cell ${isOff(k, days.off) ? 'off' : ''} ${k === today() ? 'today' : ''} ${d && d.live ? 'live' : ''}">
+      <span class="n">${k === keys[0] || k.endsWith('-01') ? md(k) : +k.slice(8)}</span>${HOLIDAYS[k] ? `<span class="hol">${esc(HOLIDAYS[k])}</span>` : ''}
+      ${d && d.flags.size ? '<span class="flag" title="要確認"></span>' : ''}
+      ${d && d.work ? `<span class="h1 ${d.ot ? 'ot' : ''}">${fm(d.work)}</span>` : ''}</div>`;
+  }
+  return `<div class="cal" role="grid" aria-label="${m} の勤務カレンダー">${cells}</div>`;
+}
+
+function statsGrid(s, target) {
+  const flagCls = n => n ? 'bad' : '';
+  return `<div class="stats">
+    <div class="stat"><span class="label">実働合計</span><span class="v">${fm(s.work)}</span></div>
+    ${target ? `<div class="stat"><span class="label">目安との差</span><span class="v ${s.work > target ? 'warn' : ''}">${s.work > target ? '+' : '−'}${fm(Math.abs(target - s.work))}</span></div>` : ''}
+    <div class="stat"><span class="label">出勤日数</span><span class="v">${s.workDays}${showHoliday() ? `<small class="small muted"> / ${s.planDays}日</small>` : ''}</span></div>
+    <div class="stat"><span class="label">所定内</span><span class="v">${fm(s.regular)}</span></div>
+    <div class="stat"><span class="label">時間外</span><span class="v ${s.ot ? 'warn' : ''}">${fm(s.ot)}</span></div>
+    ${showHoliday() ? `<div class="stat"><span class="label">休日出勤</span><span class="v">${fm(s.holiday)}</span></div>` : ''}
+    ${s.legal ? `<div class="stat"><span class="label">うち法定休日</span><span class="v warn">${fm(s.legal)}</span></div>` : ''}
+    <div class="stat"><span class="label">深夜（22–5時）</span><span class="v">${fm(s.night)}</span></div>
+    <div class="stat"><span class="label">休憩控除</span><span class="v">${fm(s.brk)}</span></div>
+    <div class="stat"><span class="label">打刻漏れ</span><span class="v ${flagCls(s.missing)}">${s.missing}<small class="small muted">日</small></span></div>
+    ${CONFIG.LOCATION ? `<div class="stat"><span class="label">区域外・位置なし</span><span class="v ${flagCls(s.outside + s.noloc)}">${s.outside + s.noloc}<small class="small muted">日</small></span></div>` : ''}
+    <div class="stat"><span class="label">休憩の申告</span><span class="v ${s.brkDecl ? 'warn' : ''}">${s.brkDecl}<small class="small muted">日</small></span></div>
+    <div class="stat"><span class="label">休憩不足（法定）</span><span class="v ${flagCls(s.brkShort)}">${s.brkShort}<small class="small muted">日</small></span></div>
+  </div>`;
+}
+
+// ---------- 日別明細 ----------
+function dayList(days, keys, opts = {}) {
+  const rows = keys.filter(k => days[k] && (days[k].punches.length || days[k].pairs.length)).reverse();
+  if (!rows.length) return '<div class="skel">この期間の打刻はまだありません。</div>';
+  return `<div class="days">${rows.map(k => {
+    const d = days[k];
+    const lines = d.pairs.map(x => `${hm(x.a)} – ${x.live ? '<span class="chip ok">勤務中</span>' : hm(x.b)}`);
+    const chips = [];
+    if (d.ot) chips.push(`<span class="chip warn">時間外 ${fm(d.ot)}</span>`);
+    if (d.night) chips.push(`<span class="chip acc">深夜 ${fm(d.night)}</span>`);
+    if (d.legal) chips.push(`<span class="chip warn">法定休日の勤務</span>`);
+    else if (d.holiday) chips.push(`<span class="chip off">休日出勤</span>`);
+    d.flags.forEach(f => chips.push(f === '休憩申告' ? `<span class="chip warn">休憩申告 ${d.decl}分</span>`
+      : `<span class="chip ${f === '手動修正' ? '' : 'bad'}">${esc(f)}</span>`));
+    return `<div class="day ${isOff(k, days.off) ? 'off' : ''}">
+      <div class="d">${md(k)} ${DOW[dowOf(k)]}${HOLIDAYS[k] ? `<small>${esc(HOLIDAYS[k])}</small>` : ''}</div>
+      <div class="times">
+        ${lines.map(l => `<div class="tline">${l}</div>`).join('') || '<div class="tline muted">—</div>'}
+        ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
+        ${opts.detail ? `<div class="plist">${d.punches.map(p => punchItem(p, opts.admin)).join('')}</div>` : ''}
+      </div>
+      <div class="w">${d.work ? fm(d.work) : '—'}<small>${d.work ? `休憩 ${fm(d.brk)}` : ''}</small></div>
+    </div>`; }).join('')}</div>`;
+}
+function punchItem(p, admin) {
+  const v = p.status === '無効';
+  const judge = !p.judge ? '' : p.judge === '区域内' ? `<span class="chip ok">区域内</span>` : `<span class="chip ${p.judge === '手動修正' ? '' : 'bad'}">${esc(p.judge)}</span>`;
+  const note = p.type === 'note'; // 承認者が後から入れた休憩の申告
+  return `<div class="pitem ${v ? 'void' : ''}">
+    ${p.photoId ? `<button class="photo-thumb" data-photo="${esc(p.photoId)}" aria-label="写真を見る" title="写真を見る">📷</button>` : ''}
+    ${note ? '' : `<span class="num">${hm(p.ts)}</span>`}<b>${p.type === 'in' ? '出勤' : p.type === 'out' ? '退勤' : '休憩の申告'}</b>${judge}
+    ${p.brk != null ? `<span class="chip warn">休憩 ${p.brk}分</span>` : ''}
+    <span class="muted">${esc(p.store || '')}${p.dist != null ? ` ${p.dist}m` : ''}</span>
+    ${p.reason ? `<span class="muted">（${esc(p.reason)}）</span>` : ''}
+    ${admin && !v ? `<button class="btn sm danger" data-void="${esc(p.id)}">無効にする</button>` : ''}
+  </div>`;
+}
+
+// ---------- 勤務時間画面 ----------
+function viewHours() {
+  const days = myDays();
+  const nav = S.view === 'week'
+    ? `<div class="nav-period"><button data-wk="-1" aria-label="前の週">‹</button><span class="p">${md(S.week)} – ${md(addDays(S.week, 6))}</span><button data-wk="1" aria-label="次の週">›</button></div>`
+    : `<div class="nav-period"><button data-mo="-1" aria-label="前の月">‹</button><span class="p">${periodLabel(S.month)}</span><button data-mo="1" aria-label="次の月">›</button></div>`;
+  let body = '<div class="skel">読み込んでいます…</div>';
+  if (days) {
+    if (S.view === 'week') {
+      const keys = range(S.week, addDays(S.week, 6)); const s = summarize(days, keys);
+      body = `<section class="panel">${meter('この週', s.work, CONFIG.WEEKLY_LIMIT, s.ot)}${weekBars(days, S.week)}</section>
+        <section class="panel"><h2>集計</h2>${statsGrid(s)}</section>
+        <section class="panel"><h2>日別明細</h2>${dayList(days, keys, { detail: true })}</section>`;
+    } else {
+      const keys = periodKeys(S.month); const s = summarize(days, keys);
+      body = `<section class="panel">${meter(`${+S.month.slice(5)}月${CONFIG.CLOSING_DAY ? '分' : ''}`, s.work, CONFIG.MONTH_TARGET, s.ot)}${monthCal(days, S.month)}
+          <div class="small muted">${showHoliday() ? `休日を除いた日数は ${s.planDays}日（${fm(s.planDays * CONFIG.DAILY_LIMIT)}）。` : ''}赤い点は打刻漏れ・区域外・休憩の申告など、確かめたい日。</div></section>
+        <section class="panel"><h2>集計</h2>${statsGrid(s, CONFIG.MONTH_TARGET)}</section>
+        <section class="panel"><h2>日別明細</h2>${dayList(days, keys, { detail: true })}</section>`;
+    }
+  }
+  return `<div class="row"><div class="seg" role="group" aria-label="期間">
+      <button data-view="week" aria-pressed="${S.view === 'week'}">週</button>
+      <button data-view="month" aria-pressed="${S.view === 'month'}">月</button></div>
+    <span class="grow"></span>${nav}</div>${body}`;
+}
+
+// ---------- 有給画面 ----------
+function statusChip(st) {
+  const cls = st === '承認' ? 'ok' : st === '申請中' ? 'warn' : st === '却下' ? 'bad' : '';
+  return `<span class="chip ${cls}">${esc(st)}</span>`;
+}
+function viewLeave() {
+  if (!S.leave) return '<div class="skel">読み込んでいます…</div>';
+  const hire = S.leave.hire, plan = S.leave.plan;
+  const active = S.leave.leaves.filter(l => l.status === '申請中' || l.status === '承認');
+  const bal = hire ? leaveLedger(hire, active.map(l => ({ date: l.date, days: l.days })), today(), plan) : null;
+  const five = hire ? fiveDayProgress(hire, S.leave.leaves, today(), plan) : null;
+  const next = hire ? nextGrant(hire, today(), plan) : null;
+  const cls = leaveClassAt(today(), plan);
+  const list = [...S.leave.leaves].sort((a, b) => b.at - a.at);
+  return `
+  ${!hire ? `<div class="panel"><div class="err">入社日が未登録のため、残日数を計算できません。承認者に入社日の登録を頼んでください。</div></div>` : `
+  <section class="panel">
+    <div class="row"><h2 class="grow" style="white-space:nowrap">有給の残日数</h2>${cls !== '通常' ? `<span class="chip">比例付与 ${esc(cls)}</span>` : ''}<span class="chip acc">入社日 ${esc(hire)}</span></div>
+    <div class="meter" style="border:0;padding:0">
+      <div class="big">${bal.avail} <small>日</small></div>
+      ${bal.over > 0 ? `<div class="err">申請中・承認済みの合計が残日数を ${bal.over}日 超えています。管理者に確認してください。</div>` : ''}
+    </div>
+    ${bal.grants.length ? `<div class="small muted">内訳：${bal.grants.filter(g => g.expire > today()).map(g => `${g.date}付与 ${g.days - g.used}/${g.days}日（${g.expire}まで）`).join('・')}</div>` : ''}
+    ${next ? `<div class="small muted">次回付与：${next.date}に${next.days}日</div>` : ''}
+    ${five ? `<div class="small ${five.taken < five.need ? '' : 'muted'}">年5日取得義務：${five.from}〜${five.to} の期間で ${five.taken}/${five.need}日 取得済み${five.taken < five.need ? `<span class="chip warn" style="margin-left:6px">あと${five.need - five.taken}日</span>` : '<span class="chip ok" style="margin-left:6px">達成</span>'}</div>` : ''}
+  </section>
+  <section class="panel">
+    <h2>有給を申請する</h2>
+    <form id="leaveForm" class="row" style="align-items:flex-end">
+      <div class="field"><label class="label" for="lvDate">取得日</label><input id="lvDate" type="date" min="${today()}" required></div>
+      <div class="field"><label class="label" for="lvKind">区分</label><select id="lvKind">${Object.keys(LEAVE_KINDS).map(k => `<option>${k}</option>`).join('')}</select></div>
+      <div class="field grow"><label class="label" for="lvReason">理由（任意）</label><input id="lvReason" placeholder="私用 など"></div>
+      <button class="btn primary" type="submit">申請する</button>
+    </form>
+    <div class="err" id="lverr"></div>
+  </section>`}
+  <section class="panel"><h2>申請の履歴</h2>
+    ${list.length ? `<div class="days">${list.map(l => `<div class="day">
+      <div class="d">${md(l.date)} ${DOW[dowOf(l.date)]}</div>
+      <div class="times"><div class="tline">${esc(l.kind)}${l.days !== 1 ? `（${l.days}日）` : ''}${l.reason ? `<span class="muted"> ・${esc(l.reason)}</span>` : ''}</div>
+        <div class="chips">${statusChip(l.status)}${l.comment ? `<span class="chip bad">理由：${esc(l.comment)}</span>` : ''}</div></div>
+      <div class="w">${l.status === '申請中' ? `<button class="btn sm danger" data-leave-cancel="${esc(l.id)}">取り消す</button>` : ''}</div>
+    </div>`).join('')}</div>` : '<div class="skel">申請はまだありません。</div>'}
+  </section>`;
+}
+
+// ---------- 管理画面 ----------
+function viewAdmin() {
+  const m = S.adm.month, D = S.adm.data;
+  const head = `<div class="row"><h2 class="grow">スタッフの勤務時間</h2>
+    <div class="nav-period"><button data-amo="-1" aria-label="前の月">‹</button><span class="p">${periodLabel(m)}</span><button data-amo="1" aria-label="次の月">›</button></div></div>`;
+  if (!D) { if (!S.adm.loading) setTimeout(() => loadAdmin(), 0); return head + '<div class="skel">読み込んでいます…</div>'; }
+  const keys = periodKeys(m);
+  const per = staffSummaries(D, keys);
+  const sel = S.adm.sel && per.find(x => x.staff.id === S.adm.sel);
+  return `${head}
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>氏名</th><th>出勤日数</th><th>実働</th><th>目安差</th><th>時間外</th>${showHoliday() ? '<th>休日</th>' : ''}<th>深夜</th><th>要確認</th><th>休憩</th></tr></thead>
+    <tbody>${per.map(x => `<tr data-sel="${esc(x.staff.id)}" aria-selected="${S.adm.sel === x.staff.id}">
+      <td>${esc(x.staff.name)}<div class="small muted">${esc(x.staff.id)}・${esc(x.staff.store || '')}${x.staff.active ? '' : '・無効'}</div></td>
+      <td class="num">${x.s.workDays}</td><td class="num">${fm(x.s.work)}</td>
+      <td class="num">${x.s.work >= CONFIG.MONTH_TARGET ? '+' : '−'}${fm(Math.abs(CONFIG.MONTH_TARGET - x.s.work))}</td>
+      <td class="num">${x.s.ot ? `<span class="chip warn">${fm(x.s.ot)}</span>` : '0:00'}${chip36(x.s, m)}</td>
+      ${showHoliday() ? `<td class="num">${fm(x.s.holiday)}</td>` : ''}<td class="num">${fm(x.s.night)}</td>
+      <td>${x.s.missing + x.s.outside + x.s.noloc ? `<span class="chip bad">${x.s.missing + x.s.outside + x.s.noloc}日</span>` : x.s.shiftMissing ? '' : '<span class="chip ok">なし</span>'}${x.s.shiftMissing ? '<span class="chip warn">シフト未登録</span>' : ''}</td>
+      <td>${x.s.brkShort ? `<span class="chip bad">不足 ${x.s.brkShort}日</span>` : ''}${x.s.brkDecl ? `<span class="chip warn">申告 ${x.s.brkDecl}日</span>` : ''}${x.s.brkShort || x.s.brkDecl ? '' : '<span class="muted">—</span>'}</td>
+    </tr>`).join('')}</tbody></table></div>
+  <div class="row"><button class="btn sm" data-csv="sum">月次集計CSV</button><button class="btn sm" data-csv="day">日別明細CSV</button>
+    <button class="btn sm" data-csv="freee">freee人事労務用CSV</button>
+    <button class="btn sm" data-reload>再読み込み</button>
+    <span class="small muted">行をタップすると明細・写真・修正</span></div>
+  ${viewYear()}
+  ${sel ? `<section class="panel">
+    <div class="row"><h2 class="grow">${esc(sel.staff.name)}（${periodLabel(m)}）</h2><button class="btn sm" data-close-sel>閉じる</button></div>
+    ${meter(`${+m.slice(5)}月${CONFIG.CLOSING_DAY ? '分' : ''}`, sel.s.work, CONFIG.MONTH_TARGET, sel.s.ot)}
+    ${monthCal(sel.days, m)}
+    ${CONFIG.HOLIDAY_RULE === 'shift' ? `<div class="row">${sel.s.shiftMissing ? '<span class="chip warn">この月のシフト（休み）が未登録です。休日なしとして数えています</span>' : ''}
+      <button class="btn sm" data-shift="${esc(sel.staff.id)}">シフト（休み）を登録</button></div>` : ''}
+    ${statsGrid(sel.s, CONFIG.MONTH_TARGET)}
+    ${canEdit(S.me) ? `<details><summary><b>打刻を手動で追加（修正）</b></summary>
+      <form id="addPunchForm" class="row" style="margin-top:10px">
+        <div class="field"><label class="label" for="apType">種別</label><select id="apType"><option value="in">出勤</option><option value="out">退勤</option></select></div>
+        <div class="field"><label class="label" for="apDt">日時</label><input id="apDt" type="datetime-local" required></div>
+        <div class="field grow"><label class="label" for="apReason">理由（必須）</label><input id="apReason" placeholder="例：退勤の押し忘れ。本人申告 20:05" required></div>
+        <button class="btn primary" type="submit">追加</button>
+      </form></details>
+      <details><summary><b>休憩を後から申告（入れ忘れ・間違い）</b></summary>
+      <form id="setBreakForm" class="row" style="margin-top:10px;align-items:flex-end">
+        <div class="field"><label class="label" for="sbDate">日付</label><input id="sbDate" type="date" required></div>
+        <div class="field" style="width:120px"><label class="label" for="sbMin">取れた休憩（分）</label><input id="sbMin" type="number" inputmode="numeric" min="0" max="600" step="1" required></div>
+        <div class="field grow"><label class="label" for="sbReason">理由（必須）</label><input id="sbReason" placeholder="例：本人申告。予約が続き15分のみ" required></div>
+        <button class="btn primary" type="submit">登録</button>
+      </form>
+      <p class="small muted" style="margin:6px 0 0">本人の申告より、ここで入れた分が優先されます。取り消すときは、日別明細の「休憩の申告」を無効にします。</p></details>` : `<p class="small muted">打刻の修正は承認者だけができます。</p>`}
+    <h3>日別明細</h3>${dayList(sel.days, keys, { detail: true, admin: canEdit(S.me) })}
+  </section>` : ''}
+  ${canEdit(S.me) ? viewLeaveAdmin(D) : ''}
+  ${viewStaffAdmin(D)}
+  ${viewStoreAdmin()}`;
+}
+function viewLeaveAdmin(D) {
+  const leaves = [...(D.leaves || [])].sort((a, b) => (a.status === '申請中' ? 0 : 1) - (b.status === '申請中' ? 0 : 1) || b.at - a.at);
+  const opts = D.staff.map(s => `<option value="${esc(s.id)}">${esc(s.name)}（${esc(s.id)}）</option>`).join('');
+  return `<section class="panel"><h2>有給の申請</h2>
+    ${leaves.length ? `<div class="days">${leaves.map(l => `<div class="day">
+      <div class="d">${md(l.date)} ${DOW[dowOf(l.date)]}</div>
+      <div class="times"><div class="tline"><b>${esc(l.name)}</b> ${esc(l.kind)}${l.days !== 1 ? `（${l.days}日）` : ''}${l.reason ? `<span class="muted"> ・${esc(l.reason)}</span>` : ''}</div>
+        <div class="chips">${statusChip(l.status)}${l.comment ? `<span class="chip bad">${esc(l.comment)}</span>` : ''}</div></div>
+      <div class="w">${l.status === '申請中' ? `<div class="row" style="gap:6px"><button class="btn sm primary" data-leave-decide="${esc(l.id)}" data-decision="承認">承認</button><button class="btn sm danger" data-leave-decide="${esc(l.id)}" data-decision="却下">却下</button></div>`
+        : l.status === '承認' ? `<button class="btn sm danger" data-leave-decide="${esc(l.id)}" data-decision="取消">取消</button>` : ''}</div>
+    </div>`).join('')}</div>` : '<div class="skel">申請はまだありません。</div>'}
+    <details><summary><b>アプリ導入前に取得した有給を登録</b></summary>
+      <form id="leavePastForm" class="row" style="margin-top:10px;align-items:flex-end">
+        <div class="field grow"><label class="label" for="lpStaff">スタッフ</label><select id="lpStaff">${opts}</select></div>
+        <div class="field"><label class="label" for="lpDate">取得日</label><input id="lpDate" type="date" required></div>
+        <div class="field"><label class="label" for="lpDays">日数</label><input id="lpDays" type="number" step="0.5" min="0.5" max="40" value="1" required></div>
+        <div class="field grow"><label class="label" for="lpReason">備考</label><input id="lpReason"></div>
+        <button class="btn primary" type="submit">登録</button>
+      </form></details>
+  </section>`;
+}
+function staffSummaries(D, keys) {
+  return D.staff.filter(st => st.active || D.punches.some(p => p.staffId === st.id)).map(st => {
+    const days = analyze(D.punches.filter(p => p.staffId === st.id), keys[0], keys[keys.length - 1], ruleOf(st, (D.shifts || {})[st.id]));
+    return { staff: st, days, s: summarize(days, keys) };
+  });
+}
+// この月だけで分かる36協定の印（月の上限・月100時間）。年の累計は「年間の確認」で見る
+function chip36(s, m) {
+  const r = check36([{ m, ot: s.ot, legal: s.legal }])[0];
+  return r.level ? ` <span class="chip ${r.level === '超過' ? 'bad' : 'warn'}" title="${esc(r.reasons.join('・'))}">36協定 ${r.level}</span>` : '';
+}
+
+// ---------- 年間の確認（36協定の年の累計・有給の出勤率）：押したときだけ24か月分を読む ----------
+async function loadYear() {
+  const m = S.adm.month, to = periodRange(m)[1], from = periodRange(addMonths(m, -23))[0];
+  S.adm.year = { month: m, loading: true }; render();
+  try {
+    const r = await api('yearData', { from: startTs(addDays(weekStartOf(from), -1)), to: startTs(addDays(to, 1)) });
+    S.adm.year = { month: m, from, to, data: r };
+  } catch (e) { toast(e.message); S.adm.year = null; }
+  render();
+}
+function yearInfo(Y, st) {
+  const D = Y.data;
+  const days = analyze(D.punches.filter(p => p.staffId === st.id), Y.from, Y.to, ruleOf(st, (D.shifts || {})[st.id]));
+  // 36協定：対象期間の始まりの5か月前から並べる（2〜6か月平均は期間をまたいで見る）
+  const startM = agreementStart(Y.month), rows = [];
+  for (let p = addMonths(startM, -5); p <= Y.month; p = addMonths(p, 1)) { const s = summarize(days, periodKeys(p)); rows.push({ m: p, ot: s.ot, legal: s.legal }); }
+  const res = check36(rows).filter(r => r.m >= startM);
+  // 出勤率：直近の付与の算定期間と、次の付与までの途中経過。最初の打刻より前を含む期間は出さない（アプリを使う前は分からない）
+  let att = null;
+  if (st.hire) {
+    const plan = planOf(D, st.id), t = Y.to < today() ? Y.to : today();
+    let last = null; for (let n = 0; ; n++) { const g = grantAt(st.hire, n, plan); if (g.date > t) break; last = { n, g }; }
+    const first = D.firsts && D.firsts[st.id] ? dk(D.firsts[st.id]) : null;
+    const leaveDates = new Set((D.leaves || []).filter(l => l.staffId === st.id && l.status === '承認').map(l => l.date));
+    const calc = (from, to) => (first && first <= from && from >= Y.from ? attendanceRate(days, from, to, leaveDates) : null);
+    att = {};
+    if (last) { const from = last.n === 0 ? st.hire : grantAt(st.hire, last.n - 1, plan).date; att.last = { g: last.g, r: calc(from, addDays(last.g.date, -1)) }; }
+    att.next = { g: grantAt(st.hire, last ? last.n + 1 : 0, plan), r: calc(last ? last.g.date : st.hire, t) };
+  }
+  return { res, att };
+}
+function viewYear() {
+  const Y = S.adm.year;
+  const btn = `<button class="btn sm" data-year>年間の確認（36協定・有給の出勤率）</button>`;
+  if (!Y || Y.month !== S.adm.month) return `<div class="row">${btn}<span class="small muted">24か月分を読み込むので、少し時間がかかります</span></div>`;
+  if (Y.loading) return '<div class="skel">年間のデータを読み込んでいます…</div>';
+  const A = CONFIG.A36, yl = A.special ? 720 : A.year / 60;
+  const pct = r => `${Math.round(r.rate * 1000) / 10}%（${r.came}/${r.plan}日）`;
+  const attLine = (label, a) => !a ? '' : `<div class="small">${label}：${a.g.date}（${a.g.cls}・${a.g.days}日）
+    ${a.r ? `出勤率 <span class="num">${pct(a.r)}</span>${a.r.rate < 0.8 ? ' <span class="chip bad">8割未満：付与を確認</span>' : ''}` : '<span class="muted">出勤率は出せません（アプリを使う前の期間を含む・休日を区別しない・シフト未登録）</span>'}</div>`;
+  // 読み込んだ期間に打刻がある人だけ（打刻をしない管理者のアカウントなどは出さない）
+  const staff = Y.data.staff.filter(st => st.active && Y.data.punches.some(p => p.staffId === st.id));
+  const s0 = agreementStart(Y.month);
+  return `<section class="panel"><div class="row"><h2 class="grow">年間の確認（${s0.slice(0, 4)}年${+s0.slice(5)}月〜）</h2><button class="btn sm" data-year>読み直す</button></div>
+    <p class="small muted" style="margin:0">36協定：月${A.month / 60}時間・年${yl}時間${A.special ? '（特別条項あり：月の上限超えは年6回まで）' : ''}。時間外＋休日労働の月100時間・2〜6か月平均80時間も見ます。月は締日で区切っています。</p>
+    <div class="days">${staff.map(st => { const { res, att } = yearInfo(Y, st); const cur = res[res.length - 1] || { cum: 0 };
+      const worst = res.some(r => r.level === '超過') ? 'bad' : res.some(r => r.level === '注意') ? 'warn' : 'ok';
+      return `<div class="day" style="grid-template-columns:1fr"><div class="times">
+        <div class="tline"><b>${esc(st.name)}</b> <span class="muted small">年の時間外 <span class="num">${fm(cur.cum)}</span> / ${yl}:00</span>
+          <span class="chip ${worst}">${worst === 'bad' ? '超過あり' : worst === 'warn' ? '注意あり' : '問題なし'}</span></div>
+        <div class="chips">${res.map(r => `<span class="chip ${r.level === '超過' ? 'bad' : r.level === '注意' ? 'warn' : ''}" title="${esc(r.reasons.join('・'))}">${+r.m.slice(5)}月 ${fm(r.ot)}</span>`).join('')}</div>
+        ${res.filter(r => r.level).map(r => `<div class="small ${r.level === '超過' ? 'err' : 'muted'}" style="margin:0">${+r.m.slice(5)}月：${esc(r.reasons.join('・'))}</div>`).join('')}
+        ${att ? attLine('直近の付与', att.last) + attLine('次の付与（途中経過）', att.next) : '<div class="small muted">入社日が未登録のため、出勤率は出せません</div>'}
+      </div></div>`; }).join('')}</div></section>`;
+}
+
+const dowText = list => (list || []).map(d => DOW[d]).join('・');
+// 休みの曜日を使うルール（曜日固定では休日の判定に、シフトではシフトの下書きに使う）
+const usesOffDows = () => CONFIG.HOLIDAY_RULE === 'fixed' || CONFIG.HOLIDAY_RULE === 'shift';
+const planOf = (D, id) => (D && D.plans && D.plans[id]) || null;
+function viewStaffAdmin(D) {
+  const staff = D.staff;
+  const opts = S.stores.map(s => `<option>${esc(s.name)}</option>`).join('');
+  return `<section class="panel"><h2>アカウント</h2>
+    <div class="days">${staff.map(st => { const cls = leaveClassAt(today(), planOf(D, st.id)); return `<div class="row" style="padding:8px 0;border-top:1px solid var(--line)">
+      <div class="grow"><b>${esc(st.name)}</b> <span class="small muted">${esc(st.id)}・${esc(st.store || '')}${st.hire ? `・入社 ${esc(st.hire)}` : ''}${usesOffDows() ? `・休み ${esc(dowText(st.offDows) || 'なし')}` : ''}${st.payrollId ? `・従業員番号 ${esc(st.payrollId)}` : ''}</span>
+        ${st.canEdit ? '<span class="chip acc">修正・承認権限</span>' : st.role === 'admin' ? '<span class="chip">管理者</span>' : ''}${st.active ? '' : '<span class="chip">無効</span>'}${cls !== '通常' ? `<span class="chip">有給 ${esc(cls)}</span>` : ''}</div>
+      ${canEdit(S.me) && !st.hire ? `<button class="btn sm" data-sethire="${esc(st.id)}">入社日を登録</button>` : ''}
+      ${canEdit(S.me) ? `<button class="btn sm" data-lclass="${esc(st.id)}">有給の区分</button>` : ''}
+      ${canEdit(S.me) && st.hire ? `<button class="btn sm" data-ladj="${esc(st.id)}">付与の調整</button>` : ''}
+      ${usesOffDows() ? `<button class="btn sm" data-setoff="${esc(st.id)}">休みの曜日</button>` : ''}
+      <button class="btn sm" data-payid="${esc(st.id)}">従業員番号</button>
+      <button class="btn sm" data-resetpin="${esc(st.id)}">PINリセット</button>
+      ${st.id !== S.me.id ? `<button class="btn sm ${st.active ? 'danger' : ''}" data-active="${esc(st.id)}" data-to="${st.active ? 0 : 1}">${st.active ? '無効にする' : '有効に戻す'}</button>` : ''}
+    </div>`; }).join('')}</div>
+    <details><summary><b>スタッフを追加</b></summary>
+    <form id="addStaffForm" class="row" style="margin-top:10px;align-items:flex-end">
+      <div class="field"><label class="label" for="asId">スタッフID</label><input id="asId" placeholder="S010" required></div>
+      <div class="field grow"><label class="label" for="asName">氏名</label><input id="asName" required></div>
+      <div class="field"><label class="label" for="asStore">所属店舗</label><select id="asStore">${opts}<option>本部</option></select></div>
+      <div class="field"><label class="label" for="asRole">権限</label><select id="asRole"><option value="staff">スタッフ</option><option value="admin">管理者</option></select></div>
+      <div class="field"><label class="label" for="asHire">入社日</label><input id="asHire" type="date"></div>
+      <div class="field"><label class="label" for="asCls">有給の区分</label><select id="asCls">${LEAVE_CLASSES.map(c => `<option>${c}</option>`).join('')}</select></div>
+      <div class="field"><label class="label" for="asPin">初期PIN</label><input id="asPin" inputmode="numeric" pattern="\\d{4,8}" placeholder="4〜8桁" required></div>
+      <button class="btn primary" type="submit">追加</button>
+    </form></details></section>`;
+}
+function viewStoreAdmin() {
+  return `<section class="panel"><h2>店舗の位置</h2>
+    <p class="small muted" style="margin:0">店舗の中で「現在地を登録」を押すと、その場所が打刻の基準になります。半径の中なら「区域内」と判定します（GPSの誤差は最大100mまで考慮）。</p>
+    ${S.stores.map((s, i) => `<div class="row" style="border-top:1px solid var(--line);padding-top:10px">
+      <div class="grow"><b>${esc(s.name)}</b><div class="small muted num">${s.lat != null ? `${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}` : '未登録'}${s.note ? `・${esc(s.note)}` : ''}</div></div>
+      <div class="field" style="width:90px"><label class="label" for="rad${i}">半径 m</label><input id="rad${i}" type="number" min="30" max="1000" step="10" value="${s.radius}"></div>
+      <button class="btn sm" data-radius="${i}">半径を保存</button>
+      <button class="btn sm primary" data-here="${i}">現在地を登録</button>
+    </div>`).join('')}</section>`;
+}
+
+// ================= 打刻シート（写真と位置は「設定」シートで使う・使わないを決める） =================
+const P = { stream: null, photo: null, loc: null, locErr: null, type: 'in', busy: false, brkOpen: false, brk: '' };
+const usePhoto = () => CONFIG.PHOTO !== 'off';
+function openPunch(type) {
+  Object.assign(P, { type, photo: null, loc: null, locErr: null, busy: false, brkOpen: false, brk: '' });
+  showSheet(); renderPunchSheet();
+  if (usePhoto()) startCamera();
+  if (CONFIG.LOCATION) getLocation();
+}
+function locHtml() {
+  if (!CONFIG.LOCATION) return '';
+  const L = P.loc, n = L && nearest(L.lat, L.lng, L.acc, S.stores);
+  if (P.locErr) return `<div class="loc bad"><div><b>位置情報を取得できません</b>${esc(P.locErr)}<div class="small">このまま打刻すると「位置情報なし」として管理者に記録されます。</div>
+      <button class="btn sm" data-reloc style="margin-top:6px">もう一度取得</button></div></div>`;
+  if (!L) return `<div class="loc"><div><b>現在地を確認しています…</b><span class="small muted">屋内では数秒かかることがあります</span></div></div>`;
+  if (!n) return `<div class="loc warn"><div><b>店舗の位置がまだ登録されていません</b><span class="small">このまま打刻できます。管理者が店内で「現在地を登録」をすると、区域の判定が始まります。</span></div></div>`;
+  if (n.inside) return `<div class="loc ok"><div><b>${esc(n.store)} の区域内です</b><span class="small">店舗から約${n.dist}m・GPS誤差 ±${Math.round(L.acc)}m</span></div></div>`;
+  return `<div class="loc warn"><div><b>店舗の区域外です</b><span class="small">最寄りの ${esc(n.store)} から約${n.dist}m・GPS誤差 ±${Math.round(L.acc)}m。このまま打刻すると「区域外」として記録されます。</span>
+      <button class="btn sm" data-reloc style="margin-top:6px">もう一度取得</button></div></div>`;
+}
+function renderPunchSheet() {
+  const refocus = document.activeElement && document.activeElement.id === 'brkMin';
+  const label = P.type === 'in' ? '出勤' : '退勤';
+  const needShot = usePhoto() && !P.photo;                         // まだ撮っていない
+  const locWait = CONFIG.LOCATION && !P.loc && !P.locErr;          // 位置の確認待ち
+  const self = CONFIG.PHOTO === 'self';
+  // 退勤のときだけ：休憩が取れなかった日の申告。入れなければ、いつもどおり自動で休憩を引く
+  const brkBox = P.type === 'out' && !needShot ? `<details id="brkBox" ${P.brkOpen ? 'open' : ''}>
+      <summary><b>休憩が取れなかった／短かった</b></summary>
+      <div class="field" style="margin-top:10px"><label class="label" for="brkMin">今日、実際に取れた休憩（分）</label>
+        <input id="brkMin" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="例：0、15、30" value="${esc(P.brk)}"></div>
+      <div class="small muted" style="margin-top:6px">入れた分だけ休憩として引きます。入れなければ、いつもどおり自動で引きます。</div>
+    </details>` : '';
+  sheetBody.innerHTML = `
+    <div class="row"><h2 class="grow">${label}の打刻</h2><button class="btn sm" data-close>やめる</button></div>
+    ${usePhoto() ? `<div class="cam" id="cam">${P.photo ? `<img src="${P.photo}" alt="撮影した写真">`
+      : `<video id="video" playsinline autoplay muted></video><div class="msg" id="camMsg">カメラを起動しています…</div>`}</div>` : ''}
+    ${locHtml()}
+    ${brkBox}
+    <div class="err" id="perr"></div>
+    ${needShot
+      ? `<button class="pbtn main" data-shoot><b style="font-size:16px">撮影する</b><span>${self ? '顔が写るように' : '店内が写るように'}</span></button>
+         <label class="small muted" style="text-align:center">カメラが動かないときは <input type="file" accept="image/*" capture="${self ? 'user' : 'environment'}" id="fileCap" style="max-width:190px"></label>`
+      : `<div class="punch-btns" ${usePhoto() ? '' : 'style="grid-template-columns:1fr"'}>
+         ${usePhoto() ? '<button class="pbtn" data-retake><b style="font-size:16px">撮り直す</b></button>' : ''}
+         <button class="pbtn main" data-send ${P.busy || locWait ? 'disabled' : ''}><b style="font-size:16px">${label}を記録</b><span>${P.busy ? '記録しています…' : locWait ? '位置の確認待ち' : new Date(Date.now() + JST).toISOString().slice(11, 16) + ' で記録'}</span></button></div>`}
+  `;
+  if (needShot && P.stream) attachStream();
+  if (refocus) { const el = document.getElementById('brkMin'); if (el) el.focus(); }
+}
+async function startCamera() {
+  stopCamera();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return camMsg('このブラウザではカメラを直接使えません。下の「ファイルを選択」から撮影してください。');
+  try {
+    P.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: CONFIG.PHOTO === 'self' ? 'user' : 'environment', width: { ideal: 960 }, height: { ideal: 1280 } }, audio: false });
+    attachStream();
+  } catch (e) { camMsg('カメラを使えませんでした。ブラウザの設定でカメラを許可するか、下の「ファイルを選択」から撮影してください。'); }
+}
+function attachStream() {
+  const v = document.getElementById('video'); if (!v) return;
+  v.srcObject = P.stream; v.play().catch(() => {});
+  const m = document.getElementById('camMsg'); if (m) m.remove();
+}
+function camMsg(t) { const m = document.getElementById('camMsg'); if (m) m.textContent = t; }
+function stopCamera() { if (P.stream) { P.stream.getTracks().forEach(t => t.stop()); P.stream = null; } }
+function getLocation() {
+  P.loc = null; P.locErr = null;
+  if (!navigator.geolocation) { P.locErr = 'この端末では位置情報を使えません。'; return renderPunchSheet(); }
+  navigator.geolocation.getCurrentPosition(
+    pos => { P.loc = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy }; if (!sheet.hidden) renderPunchSheet(); },
+    err => { P.locErr = err.code === 1 ? '位置情報が許可されていません。ブラウザの設定で許可してください。' : '電波が弱いか時間切れです。'; if (!sheet.hidden) renderPunchSheet(); },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+// 撮影：縦480pxに縮小し、日時と打刻種別を写真に焼き込む
+function makePhoto(src, sw, sh, mirror) {
+  const W = 480, H = 640, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d'); const r = Math.max(W / sw, H / sh); const dw = sw * r, dh = sh * r;
+  g.save(); if (mirror) { g.translate(W, 0); g.scale(-1, 1); } g.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh); g.restore();
+  g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, H - 46, W, 46);
+  g.fillStyle = '#fff'; g.font = '600 18px "JetBrains Mono", monospace';
+  const s = new Date(Date.now() + JST).toISOString();
+  g.fillText(`${s.slice(0, 10)} ${s.slice(11, 19)}  ${P.type === 'in' ? 'IN' : 'OUT'}`, 12, H - 26);
+  g.font = '13px sans-serif'; g.fillText(`${S.me.id} ${S.me.name}`, 12, H - 8);
+  return c.toDataURL('image/jpeg', .72);
+}
+function shoot() {
+  const v = document.getElementById('video');
+  if (!v || !v.videoWidth) return (document.getElementById('perr').textContent = 'カメラの準備ができていません。少し待つか「ファイルを選択」を使ってください。');
+  P.photo = makePhoto(v, v.videoWidth, v.videoHeight, false);
+  renderPunchSheet();
+}
+function fromFile(file) {
+  const img = new Image(); const url = URL.createObjectURL(file);
+  img.onload = () => { P.photo = makePhoto(img, img.naturalWidth, img.naturalHeight, false); URL.revokeObjectURL(url); renderPunchSheet(); };
+  img.src = url;
+}
+async function sendPunch() {
+  if (P.busy) return;
+  // 休憩の申告（退勤のときに、欄を開いて数字を入れた場合だけ送る）
+  let brk = null;
+  if (P.type === 'out' && P.brkOpen && String(P.brk).trim() !== '') {
+    brk = Number(P.brk);
+    if (!(Number.isInteger(brk) && brk >= 0 && brk <= 600)) return (document.getElementById('perr').textContent = '休憩は 0〜600 分の整数で入れてください');
+  }
+  P.busy = true; renderPunchSheet();
+  try {
+    const r = await api('punch', { type: P.type, photo: P.photo, lat: P.loc ? P.loc.lat : null, lng: P.loc ? P.loc.lng : null,
+      acc: P.loc ? P.loc.acc : null, brk, ua: navigator.userAgent });
+    if (S.mine) S.mine.punches.push(r.punch);
+    closeSheet();
+    toast(`${P.type === 'in' ? '出勤' : '退勤'}を記録しました ${hm(r.punch.ts)}${r.punch.judge && r.punch.judge !== '区域内' ? `（${r.punch.judge}）` : ''}${brk != null ? `・休憩 ${brk}分と申告` : ''}`);
+    if (S.adm.data) S.adm.data = null;
+    render();
+  } catch (e) { P.busy = false; renderPunchSheet(); document.getElementById('perr').textContent = e.message; }
+}
+
+// ---------- 汎用シート ----------
+const sheet = document.getElementById('sheet'), sheetBody = document.getElementById('sheetBody');
+function showSheet() { sheet.hidden = false; }
+function closeSheet() { stopCamera(); sheet.hidden = true; sheetBody.innerHTML = ''; }
+async function showPhoto(id) {
+  showSheet(); sheetBody.innerHTML = `<div class="row"><h2 class="grow">打刻の写真</h2><button class="btn sm" data-close>閉じる</button></div><div class="skel">読み込んでいます…</div>`;
+  try { const r = await api('photo', { photoId: id });
+    sheetBody.innerHTML = `<div class="row"><h2 class="grow">打刻の写真</h2><button class="btn sm" data-close>閉じる</button></div><img src="${r.dataUrl}" alt="打刻時の写真" style="border-radius:12px;width:100%">`;
+  } catch (e) { sheetBody.querySelector('.skel').textContent = e.message; }
+}
+// ---------- シフト（休み）の登録：管理者。休日ルールが「シフト」のとき。1人1か月ずつ ----------
+const SH = { staffId: null, month: null, days: new Set() };
+const shiftStaff = () => ((S.adm.data && S.adm.data.staff) || []).find(z => z.id === SH.staffId) || { id: SH.staffId, offDows: [] };
+function loadShiftDays() { SH.days = new Set((((S.adm.data && S.adm.data.shifts) || {})[SH.staffId] || {})[SH.month] || []); }
+function openShift(staffId) { Object.assign(SH, { staffId, month: S.adm.month }); loadShiftDays(); showSheet(); renderShiftSheet(); }
+function renderShiftSheet() {
+  const st = shiftStaff(), keys = monthKeys(SH.month), lead = (dowOf(keys[0]) - CONFIG.WEEK_START + 7) % 7;
+  const saved = !!((((S.adm.data && S.adm.data.shifts) || {})[SH.staffId] || {})[SH.month]);
+  let cells = Array.from({ length: 7 }, (_, i) => (i + CONFIG.WEEK_START) % 7).map(i => `<div class="h ${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${DOW[i]}</div>`).join('');
+  for (let i = 0; i < lead; i++) cells += '<div class="cell out"></div>';
+  for (const k of keys) {
+    const n = +k.slice(8), closed = CONFIG.CLOSED_DOWS.includes(dowOf(k)), hol = CONFIG.HOLIDAY_OFF && HOLIDAYS[k];
+    cells += closed || hol
+      ? `<div class="cell off"><span class="n">${n}</span><span class="hol">${closed ? '定休' : esc(HOLIDAYS[k])}</span></div>`
+      : `<button type="button" class="cell ${SH.days.has(n) ? 'off' : ''}" data-shd="${n}" aria-pressed="${SH.days.has(n)}" aria-label="${md(k)} ${SH.days.has(n) ? '休み' : '出勤'}"><span class="n">${n}</span>${SH.days.has(n) ? '<span class="hol">休み</span>' : ''}</button>`;
+  }
+  sheetBody.innerHTML = `
+    <div class="row"><h2 class="grow">シフト（休み）：${esc(st.name || st.id)}</h2><button class="btn sm" data-close>やめる</button></div>
+    <div class="row"><div class="nav-period"><button data-shm="-1" aria-label="前の月">‹</button><span class="p">${SH.month.slice(0, 4)}年${+SH.month.slice(5)}月</span><button data-shm="1" aria-label="次の月">›</button></div>
+      <span class="small muted">${saved ? '登録済み' : '未登録'}・休み ${SH.days.size}日</span></div>
+    <p class="small muted" style="margin:0">休みの日をタップします。${CONFIG.CLOSED_DOWS.length ? `店の定休日（${esc(dowText(CONFIG.CLOSED_DOWS))}）` : ''}${CONFIG.HOLIDAY_OFF ? (CONFIG.CLOSED_DOWS.length ? '・' : '') + '祝日' : ''}${CONFIG.CLOSED_DOWS.length || CONFIG.HOLIDAY_OFF ? 'は、選ばなくても休日です。' : ''}休日出勤と有給の申請の判定に使います。月を移ると、保存していない変更は消えます。</p>
+    <div class="cal">${cells}</div>
+    <div class="row"><button class="btn sm" data-shfill>休みの曜日で埋める${st.offDows && st.offDows.length ? `（${esc(dowText(st.offDows))}）` : ''}</button><button class="btn sm" data-shclear>全部はずす</button></div>
+    <div class="err" id="sherr"></div>
+    <button class="btn primary" data-shsave>保存する</button>`;
+}
+async function saveShift() {
+  try {
+    const r = await api('setShift', { staffId: SH.staffId, month: SH.month, days: [...SH.days].sort((a, b) => a - b) });
+    S.adm.data.shifts = r.shifts;
+    if (SH.staffId === S.me.id && S.mine) S.mine.shifts = r.shifts[S.me.id] || {};
+    closeSheet(); render(); toast('シフト（休み）を保存しました');
+  } catch (err) { document.getElementById('sherr').textContent = err.message; }
+}
+
+function formSheet(title, fields, submitLabel, onSubmit) {
+  showSheet();
+  sheetBody.innerHTML = `<div class="row"><h2 class="grow">${esc(title)}</h2><button class="btn sm" data-close>やめる</button></div>
+    <form id="sheetForm" style="display:flex;flex-direction:column;gap:12px">${fields}<div class="err" id="ferr"></div>
+    <button class="btn primary" type="submit">${esc(submitLabel)}</button></form>`;
+  document.getElementById('sheetForm').onsubmit = async e => {
+    e.preventDefault(); const b = e.target.querySelector('[type=submit]'); b.disabled = true;
+    try { await onSubmit(); closeSheet(); } catch (err) { document.getElementById('ferr').textContent = err.message; b.disabled = false; }
+  };
+  const f = sheetBody.querySelector('input'); if (f) f.focus();
+}
+let toastTimer;
+function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.hidden = true, 3200); }
+
+// ---------- CSV ----------
+function downloadCsv(kind) {
+  const D = S.adm.data, keys = periodKeys(S.adm.month); const per = staffSummaries(D, keys);
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  let rows;
+  if (kind === 'freee') {
+    // freee のサンプルと同じ形：UTF-8（BOMなし）・改行CRLF・必要なときだけ "" で囲む。働いた日も有給もない人は出さない
+    const qf = v => { const t = String(v ?? ''); return /[",\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+    const lines = [FREEE_HEAD].concat(per.map(x => freeeRow(x.staff, x.days, keys, (D.leaves || []).filter(l => l.staffId === x.staff.id)))
+      .filter(r => r[8] > 0 || r[18] > 0));
+    const blob = new Blob([lines.map(r => r.map(qf).join(',')).join('\r\n') + '\r\n'], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `freee_勤怠サマリー_${S.adm.month}.csv`; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    return toast(`freee 用CSVを作りました（${lines.length - 1}人）。従業員番号と締日が freee と同じか確かめてから取り込んでください`);
+  }
+  if (kind === 'sum') {
+    // 休日ルールが「区別しない」のときは、所定日数と休日出勤を空欄にする（列の並びは変えない）
+    const hol = showHoliday();
+    rows = [['スタッフID', '氏名', '店舗', '出勤日数', '所定日数', '実働(h:mm)', '実働(時間)', '所定内(時間)', '時間外(時間)', '休日出勤(時間)', '深夜(時間)', '休憩控除(時間)', '打刻漏れ日数', '区域外・位置なし日数', '休憩申告日数', '休憩不足日数', '法定休日労働(時間)', '36協定（この月）']];
+    per.forEach(x => { const a = check36([{ m: S.adm.month, ot: x.s.ot, legal: x.s.legal }])[0];
+      rows.push([x.staff.id, x.staff.name, x.staff.store, x.s.workDays, hol ? x.s.planDays : '', fm(x.s.work), fh(x.s.work), fh(x.s.regular), fh(x.s.ot), hol ? fh(x.s.holiday) : '', fh(x.s.night), fh(x.s.brk), x.s.missing, x.s.outside + x.s.noloc, x.s.brkDecl, x.s.brkShort,
+        fh(x.s.legal), a.level ? a.level + '：' + a.reasons.join('・') : '']); });
+  } else {
+    rows = [['日付', '曜日', '休日', 'スタッフID', '氏名', '出勤', '退勤', '拘束(h:mm)', '休憩(h:mm)', '実働(h:mm)', '時間外(h:mm)', '深夜(h:mm)', '休憩申告(分)', '要確認']];
+    per.forEach(x => keys.forEach(k => { const d = x.days[k]; if (!d || !(d.pairs.length || d.flags.size)) return;
+      rows.push([k, DOW[dowOf(k)], [isOff(k, x.days.off) ? '休日' : '', HOLIDAYS[k] || ''].filter(Boolean).join('・'), x.staff.id, x.staff.name, d.first ? hm(d.first) : '', d.last && !d.live ? hm(d.last) : '',
+        fm(d.span), fm(d.brk), fm(d.work), fm(d.ot), fm(d.night), d.flags.has('休憩申告') ? d.decl : '', [...d.flags].join('・')]); }));
+  }
+  const blob = new Blob(['﻿' + rows.map(r => r.map(q).join(',')).join('\r\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `勤怠_${S.adm.month}_${kind === 'sum' ? '月次集計' : '日別明細'}.csv`; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+// ================= イベント =================
+document.addEventListener('click', async e => {
+  const t = e.target.closest('button,[data-sel]');
+  if (S.menu && !(t && (t.id === 'menuBtn' || t.closest('.menu-list')))) { S.menu = false; render(); if (!t) return; }
+  if (!t) { if (e.target === sheet) closeSheet(); return; }
+  const d = t.dataset;
+  if (t.id === 'menuBtn') { S.menu = !S.menu; return render(); }
+  if (d.act === 'logout') { S.menu = false; return logout(); }
+  if (d.act === 'demoreset') { S.menu = false; Mock.reset(); S.mine = null; S.adm.data = null; logout(true); return; }
+  if (d.act === 'demoset') { S.menu = false; render();
+    // デモだけの切り替え。本番では、スプレッドシートの「設定」シートで変える
+    const cur = Mock.settings();
+    const sel = (id, label, opts, v) => `<div class="field"><label class="label" for="${id}">${label}</label><select id="${id}">${opts.map(([val, t]) => `<option value="${val}" ${String(v) === String(val) ? 'selected' : ''}>${t}</option>`).join('')}</select></div>`;
+    return formSheet('デモの設定を変える', `<p class="small muted" style="margin:0">本番では、スプレッドシートの「設定」シートで決めます。</p>
+      ${sel('dsPhoto', '写真', [['off', 'なし'], ['shop', '店内（背面カメラ）'], ['self', '本人（前面カメラ）']], cur.photo)}
+      ${sel('dsLoc', '位置情報', [['1', '使う'], ['0', '使わない']], cur.location ? 1 : 0)}
+      ${sel('dsRule', '休日ルール', [['none', '区別しない'], ['fixed', '曜日固定'], ['shift', 'シフト（月ごとに休みを登録）'], ['calendar', '暦どおり（土日祝）']], cur.holidayRule)}
+      ${sel('dsClose', '締日', [['0', '末日'], ['15', '15日'], ['20', '20日'], ['25', '25日']], cur.closingDay || 0)}
+      <div class="field"><span class="label">店の定休曜日（曜日固定のとき）</span><div class="row">${DOW.map((w, i) => `<label class="small"><input type="checkbox" name="dsClosed" value="${i}" ${cur.closedDows.includes(i) ? 'checked' : ''}> ${w}</label>`).join('')}</div></div>
+      ${sel('dsWeek', '週の上限', [['2400', '40時間'], ['2640', '44時間（特例）']], cur.weeklyLimit)}`, '反映する', async () => {
+        const closed = [...document.querySelectorAll('input[name=dsClosed]:checked')].map(x => +x.value);
+        applySettings(Mock.setSettings({ photo: dsPhoto.value, location: dsLoc.value === '1', holidayRule: dsRule.value, closedDows: closed, weeklyLimit: +dsWeek.value, closingDay: +dsClose.value }));
+        resetPeriods(); S.mine = null; render(); loadMine(); if (S.tab === 'admin') loadAdmin(true); toast('デモの設定を反映しました'); }); }
+  if (d.setoff) {
+    const st = (S.adm.data && S.adm.data.staff || []).find(z => z.id === d.setoff) || { offDows: [] };
+    return formSheet(`休みの曜日（${d.setoff}）`, `<p class="small muted" style="margin:0">店の定休曜日（${esc(dowText(CONFIG.CLOSED_DOWS) || 'なし')}）のほかに、この人が毎週休む曜日を選びます。${CONFIG.HOLIDAY_RULE === 'shift' ? 'シフト（休み）を登録するときの下書き（「休みの曜日で埋める」）に使います。' : '休日出勤と有給の申請の判定に使います。'}</p>
+      <div class="row">${DOW.map((w, i) => `<label><input type="checkbox" name="offDow" value="${i}" ${(st.offDows || []).includes(i) ? 'checked' : ''}> ${w}</label>`).join('')}</div>`, '保存する', async () => {
+        const dows = [...document.querySelectorAll('input[name=offDow]:checked')].map(x => +x.value);
+        const r = await api('setOffDows', { staffId: d.setoff, dows }); S.adm.data.staff = r.staff;
+        if (S.me.id === d.setoff) S.me.offDows = dows;
+        render(); toast('休みの曜日を保存しました'); });
+  }
+  if (d.year !== undefined) return loadYear();
+  if (d.shift) return openShift(d.shift);
+  if (d.shd) { const n = +d.shd; if (SH.days.has(n)) SH.days.delete(n); else SH.days.add(n); return renderShiftSheet(); }
+  if (d.shm) { SH.month = addMonths(SH.month, +d.shm); loadShiftDays(); return renderShiftSheet(); }
+  if (d.shfill !== undefined) { const off = shiftStaff().offDows || []; monthKeys(SH.month).forEach(k => { if (off.includes(dowOf(k))) SH.days.add(+k.slice(8)); }); return renderShiftSheet(); }
+  if (d.shclear !== undefined) { SH.days.clear(); return renderShiftSheet(); }
+  if (d.shsave !== undefined) return saveShift();
+  if (d.payid) {
+    const st = (S.adm.data.staff || []).find(z => z.id === d.payid) || {};
+    return formSheet(`従業員番号（${st.name || d.payid}）`, `<p class="small muted" style="margin:0">給与ソフト（freee 人事労務）に登録している従業員番号です。freee 人事労務用CSVの1列目に出ます。空ならスタッフID（${esc(d.payid)}）を出します。</p>
+      <div class="field"><label class="label" for="pyId">従業員番号</label><input id="pyId" value="${esc(st.payrollId || '')}" maxlength="255" autocapitalize="off"></div>`, '保存する', async () => {
+        const r = await api('setPayrollId', { staffId: d.payid, payrollId: pyId.value }); S.adm.data.staff = r.staff; render(); toast('従業員番号を保存しました'); });
+  }
+  if (d.lclass) {
+    const D = S.adm.data, st = D.staff.find(z => z.id === d.lclass) || {}, plan = planOf(D, d.lclass);
+    const hist = ((plan && plan.classes) || []).map(c => `${c.from ? esc(c.from) : '入社時'}から ${esc(c.cls)}`).join('<br>') || '記録なし（通常）';
+    return formSheet(`有給の区分（${st.name || d.lclass}）`, `<p class="small muted" style="margin:0">週の所定労働日数が4日以下で、週の所定労働時間が30時間未満の人だけ「週◯日」を選びます（比例付与）。週30時間以上なら、日数が少なくても「通常」です。区分は、付与日の時点のものが使われます。</p>
+      <div class="field"><label class="label" for="lcFrom">いつから</label><input id="lcFrom" type="date" value="${esc(st.hire || today())}" required></div>
+      <div class="field"><label class="label" for="lcCls">区分</label><select id="lcCls">${LEAVE_CLASSES.map(c => `<option ${c === leaveClassAt(today(), plan) ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+      <div class="small muted">これまでの記録：<br>${hist}</div>`, '保存する', async () => {
+        const r = await api('setLeaveClass', { staffId: d.lclass, from: lcFrom.value, cls: lcCls.value });
+        D.plans = r.plans; render(); toast('有給の区分を保存しました'); });
+  }
+  if (d.ladj) {
+    const D = S.adm.data, st = D.staff.find(z => z.id === d.ladj) || {}, plan = planOf(D, d.ladj);
+    const used = (D.leaves || []).filter(l => l.staffId === d.ladj && (l.status === '承認' || l.status === '申請中')).map(l => ({ date: l.date, days: l.days }));
+    const led = leaveLedger(st.hire, used, today(), plan), nx = nextGrant(st.hire, today(), plan);
+    const gs = led.grants.concat(nx ? [nx] : []).reverse();
+    return formSheet(`付与の調整（${st.name || d.ladj}）`, `<p class="small muted" style="margin:0">出勤率が8割に届かなかった年に付与しない（その回の日数をマイナス）、会社の決まりで多く付与する、などに使います。記録は消えず、操作ログに残ります。取り消すときは、逆の日数を入れます。</p>
+      <div class="field"><label class="label" for="laDate">どの付与か</label><select id="laDate">${gs.map(g => `<option value="${g.date}">${g.date} 付与（${g.cls}・法定${g.base}日${g.adj ? `・調整${g.adj > 0 ? '+' : ''}${g.adj}日` : ''}）${g.date > today() ? '・次回' : ''}</option>`).join('')}</select></div>
+      <div class="field"><label class="label" for="laDays">足す日数（減らすときはマイナス）</label><input id="laDays" type="number" step="0.5" min="-40" max="40" required></div>
+      <div class="field"><label class="label" for="laReason">理由（必須）</label><input id="laReason" placeholder="例：前年度の出勤率が8割未満のため付与しない" required></div>`, '登録する', async () => {
+        const r = await api('adjustGrant', { staffId: d.ladj, date: laDate.value, days: Number(laDays.value), reason: laReason.value });
+        D.plans = r.plans; render(); toast('付与の調整を登録しました'); });
+  }
+  if (d.act === 'pin') { S.menu = false; render();
+    return formSheet('PINを変更', `<div class="field"><label class="label" for="op">今のPIN</label><input id="op" type="password" inputmode="numeric" required></div>
+      <div class="field"><label class="label" for="np">新しいPIN（4〜8桁の数字）</label><input id="np" type="password" inputmode="numeric" required></div>
+      <div class="field"><label class="label" for="np2">新しいPIN（確認）</label><input id="np2" type="password" inputmode="numeric" required></div>`, '変更する', async () => {
+        if (np.value !== np2.value) throw new Error('新しいPINが確認用と一致しません');
+        await api('changePin', { oldPin: op.value, newPin: np.value }); toast('PINを変更しました'); }); }
+  if (d.tab) { S.tab = d.tab; window.scrollTo(0, 0); render();
+    if (d.tab === 'admin') loadAdmin(); else if (d.tab === 'leave') loadLeave(); else loadMine(); return; }
+  if (d.go) { S.tab = d.go; S.view = 'week'; S.week = weekStartOf(today()); render(); return loadMine(); }
+  if (d.punch) return openPunch(d.punch);
+  if (d.close !== undefined) return closeSheet();
+  if (d.shoot !== undefined) return shoot();
+  if (d.retake !== undefined) { P.photo = null; renderPunchSheet(); if (!P.stream) startCamera(); return; }
+  if (d.reloc !== undefined) { getLocation(); return renderPunchSheet(); }
+  if (d.send !== undefined) return sendPunch();
+  if (d.view) { S.view = d.view; render(); return loadMine(); }
+  if (d.wk) { S.week = addDays(S.week, 7 * +d.wk); render(); return loadMine(); }
+  if (d.mo) { S.month = addMonths(S.month, +d.mo); render(); return loadMine(); }
+  if (d.amo) { S.adm.month = addMonths(S.adm.month, +d.amo); S.adm.data = null; return render(); }
+  if (d.reload !== undefined) return loadAdmin(true);
+  if (d.sel) { S.adm.sel = S.adm.sel === d.sel ? null : d.sel; return render(); }
+  if (d.closeSel !== undefined) { S.adm.sel = null; return render(); }
+  if (d.csv) return downloadCsv(d.csv);
+  if (d.photo) return showPhoto(d.photo);
+  if (d.void) return formSheet('打刻を無効にする', `<p class="small muted" style="margin:0">打刻は削除せず「無効」として残ります。</p>
+      <div class="field"><label class="label" for="vr">理由（必須）</label><input id="vr" placeholder="例：誤って出勤を2回押した" required></div>`, '無効にする', async () => {
+      await api('voidPunch', { punchId: d.void, reason: vr.value }); toast('打刻を無効にしました'); loadAdmin(true); });
+  if (d.sethire) return formSheet(`入社日を登録（${d.sethire}）`, `<div class="field"><label class="label" for="hd">入社日</label><input id="hd" type="date" required></div>`, '登録する', async () => {
+      const r = await api('setHire', { staffId: d.sethire, hire: hd.value }); S.adm.data.staff = r.staff; toast('入社日を登録しました'); });
+  if (d.leaveCancel) return formSheet('有給の申請を取り消す', `<p class="small muted" style="margin:0">この操作は取り消せません。</p>`, '取り消す', async () => {
+      await api('leaveCancel', { leaveId: d.leaveCancel }); toast('申請を取り消しました'); loadLeave(true); if (canEdit(S.me)) loadAdmin(true); });
+  if (d.leaveDecide) {
+    const label = d.decision === '承認' ? '承認する' : d.decision === '却下' ? '却下する' : '取り消す';
+    if (d.decision === '却下') return formSheet('有給の申請を却下', `<div class="field"><label class="label" for="ldc">却下する理由（必須）</label><input id="ldc" placeholder="例：その日は既に人数が足りない" required></div>`, label, async () => {
+        await api('leaveDecide', { leaveId: d.leaveDecide, decision: '却下', comment: ldc.value }); toast('却下しました'); loadAdmin(true); if (S.leave) loadLeave(true); });
+    return formSheet(`有給の申請を${label}`, `<p class="small muted" style="margin:0">よろしいですか？</p>`, label, async () => {
+      await api('leaveDecide', { leaveId: d.leaveDecide, decision: d.decision }); toast(label + 'ました'); loadAdmin(true); if (S.leave) loadLeave(true); });
+  }
+  if (d.resetpin) return formSheet(`PINリセット（${d.resetpin}）`, `<div class="field"><label class="label" for="rp">新しいPIN（4〜8桁の数字）</label><input id="rp" inputmode="numeric" required></div>
+      <p class="small muted" style="margin:0">本人に新しいPINを伝え、ログイン後にメニューから変更してもらってください。</p>`, 'リセットする', async () => {
+      await api('resetPin', { staffId: d.resetpin, pin: rp.value }); toast('PINをリセットしました'); });
+  if (d.active) { try { const r = await api('setActive', { staffId: d.active, active: d.to === '1' }); S.adm.data.staff = r.staff; render(); toast(d.to === '1' ? '有効に戻しました' : '無効にしました'); } catch (err) { toast(err.message); } return; }
+  if (d.radius) { const s = S.stores[+d.radius]; try { const r = await api('setStore', { name: s.name, radius: +document.getElementById('rad' + d.radius).value }); S.stores = r.stores; render(); toast('半径を保存しました'); } catch (err) { toast(err.message); } return; }
+  if (d.here) {
+    const s = S.stores[+d.here]; t.disabled = true; t.textContent = '取得中…';
+    navigator.geolocation.getCurrentPosition(async pos => {
+      if (pos.coords.accuracy > 80) toast(`GPS誤差が ±${Math.round(pos.coords.accuracy)}m と大きいです。窓際などで再度お試しください`);
+      try { const r = await api('setStore', { name: s.name, lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy }); S.stores = r.stores; render(); toast(`${s.name} の位置を登録しました`); }
+      catch (err) { toast(err.message); render(); }
+    }, () => { toast('位置情報を取得できませんでした'); render(); }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  }
+});
+document.addEventListener('change', e => { if (e.target.id === 'fileCap' && e.target.files[0]) fromFile(e.target.files[0]); });
+// 退勤の画面の「休憩が取れなかった」：開いたか・入れた数字を覚えておく（位置が届いて画面を描き直しても消えないように）
+document.addEventListener('input', e => { if (e.target.id === 'brkMin') P.brk = e.target.value; });
+document.addEventListener('toggle', e => { if (e.target.id === 'brkBox') P.brkOpen = e.target.open; }, true);
+document.addEventListener('submit', async e => {
+  if (e.target.id === 'addPunchForm') {
+    e.preventDefault();
+    try { const ts = Date.parse(apDt.value + ':00+09:00');
+      await api('addPunch', { staffId: S.adm.sel, type: apType.value, ts, reason: apReason.value }); toast('打刻を追加しました'); loadAdmin(true);
+    } catch (err) { toast(err.message); }
+  }
+  if (e.target.id === 'setBreakForm') {
+    e.preventDefault();
+    try { await api('setBreak', { staffId: S.adm.sel, date: sbDate.value, brk: sbMin.value, reason: sbReason.value });
+      toast('休憩の申告を登録しました'); loadAdmin(true);
+    } catch (err) { toast(err.message); }
+  }
+  if (e.target.id === 'addStaffForm') {
+    e.preventDefault();
+    try { const r = await api('addStaff', { id: asId.value.trim(), name: asName.value, store: asStore.value, role: asRole.value, pin: asPin.value, hire: asHire.value, cls: asCls.value });
+      S.adm.data.staff = r.staff; if (r.plans) S.adm.data.plans = r.plans; render(); toast('スタッフを追加しました');
+    } catch (err) { toast(err.message); }
+  }
+  if (e.target.id === 'leaveForm') {
+    e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
+    try { const r = await api('leaveRequest', { date: lvDate.value, kind: lvKind.value, reason: lvReason.value });
+      S.leave.leaves.push(r.leave); render(); toast('有給を申請しました'); if (canEdit(S.me)) loadAdmin(true);
+    } catch (err) { document.getElementById('lverr').textContent = err.message; b.disabled = false; }
+  }
+  if (e.target.id === 'leavePastForm') {
+    e.preventDefault();
+    try { await api('leavePast', { staffId: lpStaff.value, date: lpDate.value, days: lpDays.value, reason: lpReason.value });
+      toast('過去の有給を登録しました'); loadAdmin(true);
+    } catch (err) { toast(err.message); }
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+// 画面に戻ってきたら最新にする（勤務中の時間を進める）
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me && sheet.hidden) render(); });
+setInterval(() => { if (S.me && sheet.hidden && !S.menu && S.tab !== 'admin' && !document.activeElement?.matches('input,select')) render(); }, 60000);
+
+boot();
+</script>
+</body>
+</html>
